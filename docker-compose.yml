@@ -1,0 +1,44 @@
+services:
+  mariadb:
+    image: mariadb:10.7.8
+    environment:
+      MARIADB_ROOT_PASSWORD: mariadb
+
+  postgres:
+    image: postgres:15.2
+    platform: linux/amd64
+    ports:
+      - "54320:5432"
+    environment:
+      POSTGRES_USER: 'postgres'
+      POSTGRES_PASSWORD: 'postgres'
+
+  mysql:
+    image: mysql:8.0.32
+    platform: linux/amd64
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=mysql
+
+  mssql2022:
+    image: mcr.microsoft.com/mssql/server:2022-CU3-ubuntu-20.04
+    platform: linux/amd64
+    ports:
+      - "1433:1433"
+    environment:
+      ACCEPT_EULA: Y
+      MSSQL_USER: SA
+      MSSQL_SA_PASSWORD: 'myStrong(!)Password'
+      MSSQL_PID: Developer
+
+  mssql2019:
+    image: mcr.microsoft.com/mssql/server:2019-CU20-ubuntu-20.04
+    platform: linux/amd64
+    ports:
+      - "1433:1433"
+    environment:
+      ACCEPT_EULA: Y
+      MSSQL_USER: SA
+      MSSQL_SA_PASSWORD: 'myStrong(!)Password'
+      MSSQL_PID: Developer
