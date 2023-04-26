@@ -1,16 +1,12 @@
-drop database if exists q1;
+drop table if exists q1;
 
-create database q1;
-
-drop table if exists q1.public.q1;
-
-create table q1.public.q1 (
+create table q1 (
     id int not null,
     data char(100) not null,
     status_id int not null
 );
 
-insert into q1.public.q1 (id, data, status_id)
+insert into public.q1 (id, data, status_id)
 select
     id.id,
     repeat('a', 100),

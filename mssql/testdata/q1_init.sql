@@ -1,7 +1,10 @@
 if db_id('q1') is not null
 begin
-    create database q1;
+    drop database q1;
 end
+go
+
+create database q1;
 go
 
 use q1;
