@@ -120,7 +120,7 @@ func Ping(ctx context.Context) {
 // FilterById the database for the information requested and prints the results.
 // If the query fails exit the program with an error.
 func FilterById(ctx context.Context) {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	var result int32
@@ -132,7 +132,7 @@ func FilterById(ctx context.Context) {
 }
 
 func FilterByName(ctx context.Context) {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	var result int32
