@@ -93,7 +93,7 @@ func Query1(ctx context.Context, status_id int32) {
 	defer cancel()
 
 	var result int32
-	err := db.QueryRowContext(ctx, "select count(*) from public.q1 as p where status_id = $1;", sql.Named("status_id", status_id)).Scan(&result)
+	err := db.QueryRowContext(ctx, "select count(*) from public.test_table as p where status_id = $1;", sql.Named("status_id", status_id)).Scan(&result)
 	if err != nil {
 		log.Fatal("unable to execute search query", err)
 	}
