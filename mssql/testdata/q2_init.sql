@@ -1,20 +1,10 @@
-if db_id('q2') is not null
-begin
-    drop database q2;
-end
+use test;
 go
 
-create database q2;
+if object_id('dbo.test_table', 'u') is not null drop table dbo.test_table;    
 go
 
-use q2;
-go
-
-
-if object_id('dbo.q2', 'u') is not null drop table dbo.q2;    
-go
-
-create table dbo.q2 (
+create table dbo.test_table (
     id int not null,
     data char(100) not null,
     status char(7) not null
@@ -26,7 +16,7 @@ with id as (
     from sys.all_columns as t1
     cross join sys.all_columns as t2
 )
-insert into dbo.q2 (id, data, status)
+insert into dbo.test_table (id, data, status)
 select top (10000000)
     id.id,
     replicate('a', 100),
