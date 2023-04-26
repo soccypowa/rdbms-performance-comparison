@@ -81,21 +81,21 @@ func startContainer(ctx context.Context, initScript string, t *testing.T) (Conta
 	})
 
 	var reader io.Reader
-	_, reader, err = container.Exec(ctx, []string{
+	result, reader, err := container.Exec(ctx, []string{
 		"/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", user, "-P", password, "-d", "master", "-i", "/tmp/init_db.sql",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	log.Printf("Init script result(/tmp/init_db.sql):\n%s\n", StreamToString(reader))
+	log.Printf("Init script(/tmp/init_db.sql) result = %d, output:\n%s\n", result, StreamToString(reader))
 
-	_, reader, err = container.Exec(ctx, []string{
+	result, reader, err = container.Exec(ctx, []string{
 		"/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", user, "-P", password, "-d", "master", "-i", initScriptContainerPath,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	log.Printf("Init script result(%s):\n%s\n", initScriptContainerPath, StreamToString(reader))
+	log.Printf("Init script(%s) result = %d, output:\n%s\n", initScriptContainerPath, result, StreamToString(reader))
 
 	mappedPort, err := container.MappedPort(ctx, nat.Port(port))
 	if err != nil {
@@ -161,6 +161,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 		initScript string
 		f          func(context.Context)
 	}{
+		{"q0", "q0_init.sql", FilterById},
 		{"q1", "q1_init.sql", FilterById},
 		{"q2", "q2_init.sql", FilterByName},
 		{"q3", "q3_init.sql", FilterByName},
