@@ -11,5 +11,3 @@ select
     repeat('a', 100),
     case when id.id % 10 = 0 then 'deleted' else 'active' end
 from id;
-
---select * from q2 limit 100;

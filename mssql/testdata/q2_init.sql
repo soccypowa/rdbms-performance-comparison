@@ -1,11 +1,15 @@
 if db_id('q2') is not null
 begin
-    create database q2;
+    drop database q2;
 end
 go
 
-use test;
+create database q2;
 go
+
+use q2;
+go
+
 
 if object_id('dbo.q2', 'u') is not null drop table dbo.q2;    
 go

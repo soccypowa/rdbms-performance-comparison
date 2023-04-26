@@ -23,7 +23,7 @@ import (
 
 var db *sql.DB // Database connection pool.
 
-const dbname = "tempdb"
+const defaultDbName = "master"
 const dockerImage = "mcr.microsoft.com/mssql/server:2019-CU20-ubuntu-20.04"
 const port = "1433/tcp"
 const user = "SA"
@@ -37,7 +37,7 @@ var env = map[string]string{
 }
 
 var dbURL = func(host string, port nat.Port) string {
-	return fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=%s", user, password, host, port.Port(), dbname)
+	return fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=%s", user, password, host, port.Port(), defaultDbName)
 }
 
 func StreamToString(stream io.Reader) string {
@@ -46,7 +46,8 @@ func StreamToString(stream io.Reader) string {
 	return buf.String()
 }
 
-func startContainer(ctx context.Context, t *testing.T) (Container, string, error) {
+func startContainer(ctx context.Context, initScript string, dbName string, t *testing.T) (Container, string, error) {
+	initScriptContainerPath := fmt.Sprintf("/tmp/%s", initScript)
 	req := ContainerRequest{
 		Image:        dockerImage,
 		ExposedPorts: []string{port},
@@ -55,8 +56,8 @@ func startContainer(ctx context.Context, t *testing.T) (Container, string, error
 		//WaitingFor: wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(config.ContainerStartupTimeout).WithQuery("SELECT 10"), // custom query
 		Files: []ContainerFile{
 			{
-				HostFilePath:      "./testdata/q1_init.sql",
-				ContainerFilePath: "/tmp/q1_init.sql",
+				HostFilePath:      fmt.Sprintf("./testdata/%s", initScript),
+				ContainerFilePath: initScriptContainerPath,
 				FileMode:          700,
 			},
 		},
@@ -73,16 +74,14 @@ func startContainer(ctx context.Context, t *testing.T) (Container, string, error
 		container.Terminate(ctx)
 	})
 
-	var result int
 	var reader io.Reader
-	result, reader, err = container.Exec(ctx, []string{
-		"/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", user, "-P", password, "-d", "master", "-i", "/tmp/q1_init.sql",
+	_, reader, err = container.Exec(ctx, []string{
+		"/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", user, "-P", password, "-d", "master", "-i", initScriptContainerPath,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	log.Printf("Result = %d", result)
-	fmt.Println(StreamToString(reader))
+	log.Printf("Init script result:\n%s\n", StreamToString(reader))
 
 	mappedPort, err := container.MappedPort(ctx, nat.Port(port))
 	if err != nil {
@@ -90,7 +89,7 @@ func startContainer(ctx context.Context, t *testing.T) (Container, string, error
 	}
 
 	connectionString := fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d;database=%s;",
-		"127.0.0.1", user, password, mappedPort.Int(), "q1")
+		"127.0.0.1", user, password, mappedPort.Int(), dbName)
 
 	return container, connectionString, err
 }
@@ -106,16 +105,28 @@ func Ping(ctx context.Context) {
 
 // Query1 the database for the information requested and prints the results.
 // If the query fails exit the program with an error.
-func Query1(ctx context.Context, status_id int32) {
+func Query1(ctx context.Context) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	var result int32
-	err := db.QueryRowContext(ctx, "select count(*) from dbo.q1 as p where status_id = @status_id;", sql.Named("status_id", status_id)).Scan(&result)
+	err := db.QueryRowContext(ctx, "select count(*) from dbo.q1 as p where status_id = @status_id;", sql.Named("status_id", 1)).Scan(&result)
 	if err != nil {
 		log.Fatal("unable to execute search query", err)
 	}
-	log.Println("result = ", result)
+	//log.Println("result = ", result)
+}
+
+func Query2(ctx context.Context) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	var result int32
+	err := db.QueryRowContext(ctx, "select count(*) from dbo.q2 as p where status = @status;", sql.Named("status", "active")).Scan(&result)
+	if err != nil {
+		log.Fatal("unable to execute search query", err)
+	}
+	//log.Println("result = ", result)
 }
 
 func TestContainerWithWaitForSQL(t *testing.T) {
@@ -131,39 +142,54 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 		stop()
 	}()
 
-	t.Run("first test", func(t *testing.T) {
-		_, dbConnectionString, err := startContainer(ctx, t)
-		if err != nil {
-			t.Fatal(err)
-		}
+	data := []struct {
+		name       string
+		initScript string
+		dbName     string
+		f          func(context.Context)
+	}{
+		{"q1", "q1_init.sql", "q1", Query1},
+		{"q2", "q2_init.sql", "q2", Query2},
+	}
 
-		db, err = sql.Open("sqlserver", dbConnectionString)
-		if err != nil {
-			log.Fatal("Error creating connection: ", err.Error())
-		}
-		defer db.Close()
+	result := make(map[string]time.Duration, len(data))
 
-		db.SetConnMaxLifetime(0)
-		db.SetMaxIdleConns(3)
-		db.SetMaxOpenConns(3)
+	for _, d := range data {
+		t.Run(d.name, func(t *testing.T) {
+			log.Printf("Starting test: %s", d.name)
 
-		warmUpExecutions := 5
-		testExecutions := 20
+			_, dbConnectionString, err := startContainer(ctx, d.initScript, d.dbName, t)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		Ping(ctx)
+			db, err = sql.Open("sqlserver", dbConnectionString)
+			if err != nil {
+				log.Fatal("Error creating connection: ", err.Error())
+			}
+			defer db.Close()
 
-		for i := 0; i < warmUpExecutions; i++ {
-			Query1(ctx, 1)
-		}
+			db.SetConnMaxLifetime(0)
+			db.SetMaxIdleConns(3)
+			db.SetMaxOpenConns(3)
 
-		start := time.Now()
+			Ping(ctx)
 
-		for i := 0; i < testExecutions; i++ {
-			Query1(ctx, 1)
-		}
+			for i := 0; i < config.WarmUpExecutions; i++ {
+				d.f(ctx)
+			}
 
-		elapsed := time.Since(start)
+			start := time.Now()
 
-		log.Printf("Avg execution time: %s", elapsed/time.Duration(testExecutions))
-	})
+			for i := 0; i < config.TestExecutions; i++ {
+				d.f(ctx)
+			}
+
+			elapsed := time.Since(start)
+
+			result[d.name] = elapsed / time.Duration(config.TestExecutions)
+		})
+	}
+
+	log.Println(result)
 }
