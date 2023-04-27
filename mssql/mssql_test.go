@@ -25,10 +25,14 @@ var db *sql.DB // Database connection pool.
 
 const defaultDbName = "master"
 const testDbName = "test"
-const dockerImage = "mcr.microsoft.com/mssql/server:2019-CU20-ubuntu-20.04"
 const port = "1433/tcp"
 const user = "SA"
 const password = "myStrong(!)Password"
+
+var dockerImages = []string{
+	"mcr.microsoft.com/mssql/server:2019-CU20-ubuntu-20.04",
+	"mcr.microsoft.com/mssql/server:2022-CU3-ubuntu-20.04",
+}
 
 var env = map[string]string{
 	"ACCEPT_EULA":       "Y",
@@ -47,7 +51,7 @@ func StreamToString(stream io.Reader) string {
 	return buf.String()
 }
 
-func startContainer(ctx context.Context, initScript string, t *testing.T) (Container, string, error) {
+func startContainer(ctx context.Context, initScript string, dockerImage string, t *testing.T) (Container, string, error) {
 	initScriptContainerPath := fmt.Sprintf("/tmp/%s", initScript)
 	req := ContainerRequest{
 		Image:        dockerImage,
@@ -170,41 +174,44 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 
 	result := make(map[string]time.Duration, len(data))
 
-	for _, d := range data {
-		t.Run(d.name, func(t *testing.T) {
-			log.Printf("Starting test: %s", d.name)
+	for _, dockerImage := range dockerImages {
+		for _, d := range data {
+			t.Run(d.name, func(t *testing.T) {
+				log.Printf("Starting test %s on image %s...", d.name, dockerImage)
 
-			_, dbConnectionString, err := startContainer(ctx, d.initScript, t)
-			if err != nil {
-				t.Fatal(err)
-			}
+				_, dbConnectionString, err := startContainer(ctx, d.initScript, dockerImage, t)
+				if err != nil {
+					t.Fatal(err)
+				}
 
-			db, err = sql.Open("sqlserver", dbConnectionString)
-			if err != nil {
-				log.Fatal("Error creating connection: ", err.Error())
-			}
-			defer db.Close()
+				db, err = sql.Open("sqlserver", dbConnectionString)
+				if err != nil {
+					log.Fatal("Error creating connection: ", err.Error())
+				}
+				defer db.Close()
 
-			db.SetConnMaxLifetime(0)
-			db.SetMaxIdleConns(3)
-			db.SetMaxOpenConns(3)
+				db.SetConnMaxLifetime(0)
+				db.SetMaxIdleConns(3)
+				db.SetMaxOpenConns(3)
 
-			Ping(ctx)
+				Ping(ctx)
 
-			for i := 0; i < config.WarmUpExecutions; i++ {
-				d.f(ctx)
-			}
+				for i := 0; i < config.WarmUpExecutions; i++ {
+					d.f(ctx)
+				}
 
-			start := time.Now()
+				start := time.Now()
 
-			for i := 0; i < config.TestExecutions; i++ {
-				d.f(ctx)
-			}
+				for i := 0; i < config.TestExecutions; i++ {
+					d.f(ctx)
+				}
 
-			elapsed := time.Since(start)
+				elapsed := time.Since(start)
 
-			result[d.name] = elapsed / time.Duration(config.TestExecutions)
-		})
+				key := fmt.Sprintf("%s - %s", dockerImage, d.name)
+				result[key] = elapsed / time.Duration(config.TestExecutions)
+			})
+		}
 	}
 
 	log.Println(result)
