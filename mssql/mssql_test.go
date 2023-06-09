@@ -31,7 +31,7 @@ const password = "myStrong(!)Password"
 
 var dockerImages = []string{
 	"mcr.microsoft.com/mssql/server:2019-CU20-ubuntu-20.04",
-	"mcr.microsoft.com/mssql/server:2022-CU3-ubuntu-20.04",
+	"mcr.microsoft.com/mssql/server:2022-CU4-ubuntu-20.04",
 }
 
 var env = map[string]string{

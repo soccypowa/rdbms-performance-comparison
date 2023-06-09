@@ -22,7 +22,7 @@ import (
 var db *sql.DB // Database connection pool.
 
 const dbname = "postgres"
-const postgresImage = "postgres:15.2"
+const postgresImage = "postgres:15.3"
 const port = "5432/tcp"
 const user = "postgres"
 const password = "password"
