@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"os/signal"
+	"regexp"
 	"testing"
 	"time"
 
@@ -51,26 +53,41 @@ func StreamToString(stream io.Reader) string {
 	return buf.String()
 }
 
-func startContainer(ctx context.Context, initScript string, dockerImage string, t *testing.T) (Container, string, error) {
-	initScriptContainerPath := fmt.Sprintf("/tmp/%s", initScript)
+// read all *.sql files from testdata folder
+func ReadInitSqlFiles() []ContainerFile {
+	var files []ContainerFile
+	fileInfos, err := os.ReadDir("./testdata")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, fileInfo := range fileInfos {
+		match, _ := regexp.MatchString(".*init.*\\.sql", fileInfo.Name())
+
+		if fileInfo.IsDir() || !match {
+			continue
+		}
+
+		files = append(files, ContainerFile{
+			HostFilePath:      "./testdata/" + fileInfo.Name(),
+			ContainerFilePath: "/tmp/" + fileInfo.Name(),
+			FileMode:          700,
+		})
+	}
+	return files
+}
+
+func startContainer(ctx context.Context, dockerImage string, t *testing.T) (Container, string, error) {
+	containerFiles := ReadInitSqlFiles()
+
 	req := ContainerRequest{
-		Image:        dockerImage,
-		ExposedPorts: []string{port},
-		Env:          env,
-		WaitingFor:   wait.ForSQL(nat.Port(port), "sqlserver", dbURL).WithStartupTimeout(config.ContainerStartupTimeout),
-		//WaitingFor: wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(config.ContainerStartupTimeout).WithQuery("SELECT 10"), // custom query
-		Files: []ContainerFile{
-			{
-				HostFilePath:      "./testdata/init_db.sql",
-				ContainerFilePath: "/tmp/init_db.sql",
-				FileMode:          700,
-			},
-			{
-				HostFilePath:      fmt.Sprintf("./testdata/%s", initScript),
-				ContainerFilePath: initScriptContainerPath,
-				FileMode:          700,
-			},
-		},
+		Image:         dockerImage,
+		ImagePlatform: "linux/amd64",
+		ExposedPorts:  []string{port},
+		Env:           env,
+		WaitingFor:    wait.ForSQL(nat.Port(port), "sqlserver", dbURL).WithStartupTimeout(config.ContainerStartupTimeout),
+		//WaitingFor: wait.ForSQL(nat.Port(port), "sqlserver", dbURL).WithStartupTimeout(config.ContainerStartupTimeout).WithQuery("SELECT 1"), // custom query
+		Files: containerFiles,
 	}
 	container, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
@@ -92,14 +109,6 @@ func startContainer(ctx context.Context, initScript string, dockerImage string, 
 		t.Fatal(err)
 	}
 	log.Printf("Init script(/tmp/init_db.sql) result = %d, output:\n%s\n", result, StreamToString(reader))
-
-	result, reader, err = container.Exec(ctx, []string{
-		"/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", user, "-P", password, "-d", "master", "-i", initScriptContainerPath,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	log.Printf("Init script(%s) result = %d, output:\n%s\n", initScriptContainerPath, result, StreamToString(reader))
 
 	mappedPort, err := container.MappedPort(ctx, nat.Port(port))
 	if err != nil {
@@ -172,23 +181,31 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 		{"q4", "q4_init.sql", FilterByName},
 	}
 
-	result := make(map[string]time.Duration, len(data))
+	result := make(map[string]string, len(data))
 
 	for _, dockerImage := range dockerImages {
+		container, dbConnectionString, err := startContainer(ctx, dockerImage, t)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		db, err = sql.Open("sqlserver", dbConnectionString)
+		if err != nil {
+			log.Fatal("Error creating connection: ", err.Error())
+		}
+
 		for _, d := range data {
+			initScriptContainerPath := fmt.Sprintf("/tmp/%s", d.initScript)
+			execResult, reader, err := container.Exec(ctx, []string{
+				"/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", user, "-P", password, "-d", "master", "-i", initScriptContainerPath,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			log.Printf("Init script(%s) result = %d, output:\n%s\n", initScriptContainerPath, execResult, StreamToString(reader))
+
 			t.Run(d.name, func(t *testing.T) {
 				log.Printf("Starting test %s on image %s...", d.name, dockerImage)
-
-				_, dbConnectionString, err := startContainer(ctx, d.initScript, dockerImage, t)
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				db, err = sql.Open("sqlserver", dbConnectionString)
-				if err != nil {
-					log.Fatal("Error creating connection: ", err.Error())
-				}
-				defer db.Close()
 
 				db.SetConnMaxLifetime(0)
 				db.SetMaxIdleConns(3)
@@ -209,10 +226,17 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 				elapsed := time.Since(start)
 
 				key := fmt.Sprintf("%s - %s", dockerImage, d.name)
-				result[key] = elapsed / time.Duration(config.TestExecutions)
+				result[key] = fmt.Sprintf("%s", elapsed/time.Duration(config.TestExecutions))
 			})
 		}
+
+		db.Close()
 	}
 
-	log.Println(result)
+	prettyResult, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		log.Println("error:", err)
+	}
+
+	log.Println(string(prettyResult))
 }
