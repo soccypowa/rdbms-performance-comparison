@@ -1,7 +1,7 @@
 use test;
 go
 
-if object_id('dbo.test_table', 'u') is not null drop table dbo.test_table1;    
+if object_id('dbo.test_table', 'u') is not null drop table dbo.test_table;
 go
 
 create table dbo.test_table (
