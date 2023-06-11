@@ -34,4 +34,3 @@ create index idx_order_pay_type on `order`(pay_type);
 create index idx_order_group_id on `order`(group_id);
 
 -- select count(*) from `order`;
-
