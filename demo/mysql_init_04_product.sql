@@ -23,5 +23,3 @@ select
     date_add('2020-01-01', interval id second) as dt
 from tmp
 where id < 1000000;
-
-
