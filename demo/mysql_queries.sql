@@ -21,7 +21,7 @@ where t.name = 'test_db/client';
 
 select ii.index_id, ii.name, ii.table_id, ii.type, t.name
 from information_schema.innodb_indexes ii
-         join information_schema.innodb_tables t on ii.table_id = t.table_id
+join information_schema.innodb_tables t on ii.table_id = t.table_id
 where t.name = 'test_db/order';
 
 
@@ -49,3 +49,11 @@ where (o.client_id < 10000 or o.client_id > 90000) and o.group_id < 5;
 
 select count(*) from `order` as o where o.client_id < 10000;
 select count(*) from `order` as o where o.group_id < 10;
+
+explain analyze select count(*)
+from `order` as o
+inner join order_detail od on o.id = od.order_id;
+
+explain analyze select count(c.country), count(c_ex.address)
+from client as c
+inner join client_ex as c_ex on c_ex.id = c.id;

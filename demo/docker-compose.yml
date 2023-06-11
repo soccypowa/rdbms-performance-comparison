@@ -28,6 +28,7 @@ services:
       - "./mysql_init_03_order.sql:/docker-entrypoint-initdb.d/mysql_init_03_order.sql"
       - "./mysql_init_04_product.sql:/docker-entrypoint-initdb.d/mysql_init_04_product.sql"
       - "./mysql_init_05_order_detail.sql:/docker-entrypoint-initdb.d/mysql_init_05_order_detail.sql"
+      - "./mysql_init_06_filter_10m.sql:/docker-entrypoint-initdb.d/mysql_init_06_filter_10m.sql"
 
   mssql2022:
     image: mcr.microsoft.com/mssql/server:2022-CU4-ubuntu-20.04
