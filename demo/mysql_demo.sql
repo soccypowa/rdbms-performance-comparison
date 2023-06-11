@@ -1,3 +1,11 @@
+-- 01 - lookup by primary key
+explain analyze select id from client where id = 1;
+explain analyze select id from client where id = 100000;
+
+-- 02 - lookup by primary key + column not in index
+explain analyze select id, name from client where id = 1;
+explain analyze select id, name from client where id = 100000;
+
 /*
  A numeric value derived from bit-level information that identifies the index type.
  0 = nonunique secondary index;
