@@ -17,10 +17,6 @@ import (
 	_ "github.com/microsoft/go-mssqldb"
 )
 
-var mysqlDb *sql.DB    // Database connection pool.
-var postgresDb *sql.DB // Database connection pool.
-var mssqlDb *sql.DB    // Database connection pool.
-
 func Ping(ctx context.Context, db *sql.DB) {
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
@@ -67,36 +63,12 @@ func Query03(ctx context.Context, db *sql.DB, query string) {
 	//log.Println("result = ", result)
 }
 
-func MySql05(ctx context.Context) {
+func Query05(ctx context.Context, db *sql.DB, query string) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	var result int32
-	err := mysqlDb.QueryRowContext(ctx, "select count(*) from `order` as o inner join `order_detail` as od on od.order_id = o.id;").Scan(&result)
-	if err != nil {
-		log.Fatal("unable to execute query", err)
-	}
-	//log.Println("result = ", result)
-}
-
-func Postgres05(ctx context.Context) {
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-
-	var result int32
-	err := postgresDb.QueryRowContext(ctx, "SET enable_hashjoin = off; select count(*) from \"order\" as o inner join order_detail as od on od.order_id = o.id;").Scan(&result)
-	if err != nil {
-		log.Fatal("unable to execute query", err)
-	}
-	//log.Println("result = ", result)
-}
-
-func MsSql05(ctx context.Context) {
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-
-	var result int32
-	err := mssqlDb.QueryRowContext(ctx, "select count(*) from [order] as o inner join order_detail as od on od.order_id = o.id;").Scan(&result)
+	var result int
+	err := db.QueryRowContext(ctx, query).Scan(&result)
 	if err != nil {
 		log.Fatal("unable to execute query", err)
 	}
@@ -120,6 +92,8 @@ func ExecQuery(ctx context.Context, f func(context.Context, *sql.DB, string), db
 
 func TestDemo(t *testing.T) {
 	var err error
+	var db *sql.DB
+
 	ctx, stop := context.WithCancel(context.Background())
 	defer stop()
 
@@ -131,88 +105,124 @@ func TestDemo(t *testing.T) {
 		stop()
 	}()
 
-	data := []struct {
-		name           string
-		mysql_query    string
-		postgres_query string
-		mssql_query    string
-		f              func(context.Context, *sql.DB, string)
-		execs          int
+	databases := []struct {
+		connectionName string
+		driverName     string
+		dsn            string
 	}{
-		{
-			"01",
-			"select id from client as c where id = 1;",
-			"select id from client as c where id = 1;",
-			"select id from client as c where id = 1;",
-			Query01,
-			3000,
-		},
+		{"mysql", "mysql", "root:mysql@tcp(127.0.0.1:3306)/test_db"},
+		{"postgres", "postgres", "postgres://postgres:postgres@localhost:5432/test_db?sslmode=disable"},
+		{"mssql2022", "sqlserver", "sqlserver://SA:myStrong(!)Password@localhost:1433?database=test_db"},
+	}
+
+	data := []struct {
+		testName  string
+		queries   map[string]map[string]string
+		f         func(context.Context, *sql.DB, string)
+		execCount int
+	}{
 		//{
-		//	"02",
-		//	"select id, name from client as c where id = 1;",
-		//	"select id, name from client as c where id = 1;",
-		//	"select id, name from client as c where id = 1;",
-		//	Query02,
+		//	"01",
+		//	map[string]map[string]string{
+		//		"mysql": {
+		//			"": "select id from client as c where id = 1;",
+		//		},
+		//		"postgres": {
+		//			"": "select id from client as c where id = 1;",
+		//		},
+		//		"mssql2022": {
+		//			"": "select id from client as c where id = 1;",
+		//		},
+		//	},
+		//	Query01,
 		//	3000,
 		//},
+		{
+			"02",
+			map[string]map[string]string{
+				"mysql": {
+					"": "select id, name from client as c where id = 1;",
+				},
+				"postgres": {
+					"": "select id, name from client as c where id = 1;",
+				},
+				"mssql2022": {
+					"": "select id, name from client as c where id = 1;",
+				},
+			},
+			Query02,
+			3000,
+		},
+		{
+			"03",
+			map[string]map[string]string{
+				"mysql": {
+					"": "select min(id) from client as c;",
+				},
+				"postgres": {
+					"": "select min(id) from client as c;",
+				},
+				"mssql2022": {
+					"": "select min(id) from client as c;",
+				},
+			},
+			Query03,
+			1000,
+		},
 		//{
-		//	"03",
-		//	"select min(id) from client as c;",
-		//	"select min(id) from client as c;",
-		//	"select min(id) from client as c;",
-		//	Query03,
-		//	1000,
+		//	"05",
+		//	map[string]map[string]string{
+		//		"mysql": {
+		//			"": "select count(*) from `order` as o inner join `order_detail` as od on od.order_id = o.id;",
+		//		},
+		//		"postgres": {
+		//			"": "select count(*) from \"order\" as o inner join order_detail as od on od.order_id = o.id;",
+		//			//"hashjoin=off": "SET enable_hashjoin = off; select count(*) from \"order\" as o inner join order_detail as od on od.order_id = o.id;",
+		//		},
+		//		"mssql2022": {
+		//			"": "select count(*) from [order] as o inner join order_detail as od on od.order_id = o.id;",
+		//			//"loop join": "select count(*) from [order] as o inner loop join order_detail as od on od.order_id = o.id;",
+		//		},
+		//	},
+		//	Query05,
+		//	0,
 		//},
-		//{"q5", MySql05, Postgres05, MsSql05},
 	}
 
-	// MySQL
-	mysqlDb, err = sql.Open("mysql", "root:mysql@tcp(127.0.0.1:3306)/test_db")
-	defer mysqlDb.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
-	mysqlDb.SetConnMaxLifetime(0)
-	mysqlDb.SetMaxIdleConns(3)
-	mysqlDb.SetMaxOpenConns(3)
-	Ping(ctx, mysqlDb)
+	result := make(map[string]string, len(data)*len(databases))
 
-	// PostgreSQL
-	postgresDb, err = sql.Open("postgres", "postgres://postgres:postgres@localhost:5432/test_db?sslmode=disable")
-	defer postgresDb.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
-	postgresDb.SetConnMaxLifetime(0)
-	postgresDb.SetMaxIdleConns(3)
-	postgresDb.SetMaxOpenConns(3)
-	Ping(ctx, postgresDb)
+	for _, d := range databases {
+		db, err = sql.Open(d.driverName, d.dsn)
+		if err != nil {
+			log.Fatalf("Unable to connect to database(%s): %v", d.connectionName, err)
+		}
 
-	// MSSQL
-	mssqlDb, err = sql.Open("sqlserver", "sqlserver://SA:myStrong(!)Password@localhost:1433?database=test_db")
-	defer mssqlDb.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
-	mssqlDb.SetConnMaxLifetime(0)
-	mssqlDb.SetMaxIdleConns(3)
-	mssqlDb.SetMaxOpenConns(3)
-	Ping(ctx, mssqlDb)
+		db.SetConnMaxLifetime(0)
+		db.SetMaxIdleConns(3)
+		db.SetMaxOpenConns(3)
+		Ping(ctx, db)
 
-	result := make(map[string]string, len(data)*3)
+		for _, testData := range data {
+			queries, ok := testData.queries[d.connectionName]
+			if !ok {
+				continue
+			} else {
+				for queryName, sqlText := range queries {
+					numberOfExecutions := config.TestExecutions
+					if testData.execCount > 0 {
+						numberOfExecutions = testData.execCount
+					}
+					duration := ExecQuery(ctx, testData.f, db, sqlText, numberOfExecutions)
+					key := fmt.Sprintf("%s - %s", testData.testName, d.connectionName)
+					if queryName != "" {
+						key += fmt.Sprintf("(%s)", queryName)
+					}
+					result[key] = fmt.Sprintf("%s", duration/time.Duration(config.TestExecutions))
+				}
+			}
+		}
 
-	for _, d := range data {
-		duration := ExecQuery(ctx, d.f, mysqlDb, d.mysql_query, d.execs)
-		key := fmt.Sprintf("%s - mysql", d.name)
-		result[key] = fmt.Sprintf("%s", duration/time.Duration(config.TestExecutions))
-
-		duration = ExecQuery(ctx, d.f, postgresDb, d.postgres_query, d.execs)
-		key = fmt.Sprintf("%s - postgres", d.name)
-		result[key] = fmt.Sprintf("%s", duration/time.Duration(config.TestExecutions))
-
-		duration = ExecQuery(ctx, d.f, mssqlDb, d.mssql_query, d.execs)
-		key = fmt.Sprintf("%s - mssql", d.name)
-		result[key] = fmt.Sprintf("%s", duration/time.Duration(config.TestExecutions))
+		db.Close()
 	}
 
 	prettyResult, err := json.MarshalIndent(result, "", "  ")
