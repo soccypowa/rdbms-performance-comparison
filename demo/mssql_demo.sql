@@ -17,6 +17,11 @@ select id from client where id = 100000;
 select id, name from client where id = 1;
 select id, name from client where id = 100000;
 
+-- 03 - min and max
+select min(id) from client;
+select max(id) from client;
+select min(id), max(id) from client;
+
 
 select count(*) from [order] as o inner join order_detail as od on od.order_id = o.id;
 

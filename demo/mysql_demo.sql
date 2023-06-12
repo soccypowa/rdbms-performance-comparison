@@ -6,6 +6,12 @@ explain analyze select id from client where id = 100000;
 explain analyze select id, name from client where id = 1;
 explain analyze select id, name from client where id = 100000;
 
+-- 03 - min and max
+explain analyze select min(id) from client;
+explain analyze select max(id) from client;
+explain analyze select min(id), max(id) from client;
+
+
 /*
  A numeric value derived from bit-level information that identifies the index type.
  0 = nonunique secondary index;

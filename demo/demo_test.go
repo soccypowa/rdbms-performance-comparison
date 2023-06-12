@@ -30,75 +30,37 @@ func Ping(ctx context.Context, db *sql.DB) {
 	}
 }
 
-func MySql01(ctx context.Context) {
+func Query01(ctx context.Context, db *sql.DB, query string) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	var result int32
-	err := mysql_db.QueryRowContext(ctx, "select id from client as c where id = 1;").Scan(&result)
+	var id int
+	err := db.QueryRowContext(ctx, query).Scan(&id)
 	if err != nil {
 		log.Fatal("unable to execute query", err)
 	}
 	//log.Println("result = ", result)
 }
 
-func Postgres01(ctx context.Context) {
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-
-	var result int32
-	err := postgres_db.QueryRowContext(ctx, "select id from client as c where id = 1;").Scan(&result)
-	if err != nil {
-		log.Fatal("unable to execute query", err)
-	}
-	//log.Println("result = ", result)
-}
-
-func MsSql01(ctx context.Context) {
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-
-	var result int32
-	err := mssql_db.QueryRowContext(ctx, "select id from client as c where id = 1;").Scan(&result)
-	if err != nil {
-		log.Fatal("unable to execute query", err)
-	}
-	//log.Println("result = ", result)
-}
-
-func MySql02(ctx context.Context) {
+func Query02(ctx context.Context, db *sql.DB, query string) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	var id int
 	var name string
-	err := mysql_db.QueryRowContext(ctx, "select id, name from client as c where id = 1;").Scan(&id, &name)
+	err := db.QueryRowContext(ctx, query).Scan(&id, &name)
 	if err != nil {
 		log.Fatal("unable to execute query", err)
 	}
 	//log.Println("result = ", result)
 }
 
-func Postgres02(ctx context.Context) {
+func Query03(ctx context.Context, db *sql.DB, query string) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	var id int
-	var name string
-	err := postgres_db.QueryRowContext(ctx, "select id, name from client as c where id = 1;").Scan(&id, &name)
-	if err != nil {
-		log.Fatal("unable to execute query", err)
-	}
-	//log.Println("result = ", result)
-}
-
-func MsSql02(ctx context.Context) {
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-
-	var id int
-	var name string
-	err := mssql_db.QueryRowContext(ctx, "select id, name from client as c where id = 1;").Scan(&id, &name)
+	var count int
+	err := db.QueryRowContext(ctx, query).Scan(&count)
 	if err != nil {
 		log.Fatal("unable to execute query", err)
 	}
@@ -141,9 +103,9 @@ func MsSql05(ctx context.Context) {
 	//log.Println("result = ", result)
 }
 
-func ExecQuery(ctx context.Context, f func(context.Context), execs int) time.Duration {
+func ExecQuery(ctx context.Context, f func(context.Context, *sql.DB, string), db *sql.DB, query string, execs int) time.Duration {
 	for i := 0; i < config.WarmUpExecutions; i++ {
-		f(ctx)
+		f(ctx, db, query)
 	}
 
 	if execs == 0 {
@@ -151,7 +113,7 @@ func ExecQuery(ctx context.Context, f func(context.Context), execs int) time.Dur
 	}
 	start := time.Now()
 	for i := 0; i < execs; i++ {
-		f(ctx)
+		f(ctx, db, query)
 	}
 	return time.Since(start)
 }
@@ -170,14 +132,37 @@ func TestDemo(t *testing.T) {
 	}()
 
 	data := []struct {
-		name       string
-		mysql_f    func(context.Context)
-		postgres_f func(context.Context)
-		mssql_f    func(context.Context)
-		execs      int
+		name           string
+		mysql_query    string
+		postgres_query string
+		mssql_query    string
+		f              func(context.Context, *sql.DB, string)
+		execs          int
 	}{
-		//{"01", MySql01, Postgres01, MsSql01, 3000},
-		{"02", MySql02, Postgres02, MsSql02, 3000},
+		{
+			"01",
+			"select id from client as c where id = 1;",
+			"select id from client as c where id = 1;",
+			"select id from client as c where id = 1;",
+			Query01,
+			3000,
+		},
+		//{
+		//	"02",
+		//	"select id, name from client as c where id = 1;",
+		//	"select id, name from client as c where id = 1;",
+		//	"select id, name from client as c where id = 1;",
+		//	Query02,
+		//	3000,
+		//},
+		//{
+		//	"03",
+		//	"select min(id) from client as c;",
+		//	"select min(id) from client as c;",
+		//	"select min(id) from client as c;",
+		//	Query03,
+		//	1000,
+		//},
 		//{"q5", MySql05, Postgres05, MsSql05},
 	}
 
@@ -217,15 +202,15 @@ func TestDemo(t *testing.T) {
 	result := make(map[string]string, len(data)*3)
 
 	for _, d := range data {
-		duration := ExecQuery(ctx, d.mysql_f, d.execs)
+		duration := ExecQuery(ctx, d.f, mysql_db, d.mysql_query, d.execs)
 		key := fmt.Sprintf("%s - mysql", d.name)
 		result[key] = fmt.Sprintf("%s", duration/time.Duration(config.TestExecutions))
 
-		duration = ExecQuery(ctx, d.postgres_f, d.execs)
+		duration = ExecQuery(ctx, d.f, postgres_db, d.postgres_query, d.execs)
 		key = fmt.Sprintf("%s - postgres", d.name)
 		result[key] = fmt.Sprintf("%s", duration/time.Duration(config.TestExecutions))
 
-		duration = ExecQuery(ctx, d.mssql_f, d.execs)
+		duration = ExecQuery(ctx, d.f, mssql_db, d.mssql_query, d.execs)
 		key = fmt.Sprintf("%s - mssql", d.name)
 		result[key] = fmt.Sprintf("%s", duration/time.Duration(config.TestExecutions))
 	}
