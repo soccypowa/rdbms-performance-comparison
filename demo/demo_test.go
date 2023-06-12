@@ -17,9 +17,9 @@ import (
 	_ "github.com/microsoft/go-mssqldb"
 )
 
-var mysql_db *sql.DB    // Database connection pool.
-var postgres_db *sql.DB // Database connection pool.
-var mssql_db *sql.DB    // Database connection pool.
+var mysqlDb *sql.DB    // Database connection pool.
+var postgresDb *sql.DB // Database connection pool.
+var mssqlDb *sql.DB    // Database connection pool.
 
 func Ping(ctx context.Context, db *sql.DB) {
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
@@ -72,7 +72,7 @@ func MySql05(ctx context.Context) {
 	defer cancel()
 
 	var result int32
-	err := mysql_db.QueryRowContext(ctx, "select count(*) from `order` as o inner join `order_detail` as od on od.order_id = o.id;").Scan(&result)
+	err := mysqlDb.QueryRowContext(ctx, "select count(*) from `order` as o inner join `order_detail` as od on od.order_id = o.id;").Scan(&result)
 	if err != nil {
 		log.Fatal("unable to execute query", err)
 	}
@@ -84,7 +84,7 @@ func Postgres05(ctx context.Context) {
 	defer cancel()
 
 	var result int32
-	err := postgres_db.QueryRowContext(ctx, "SET enable_hashjoin = off; select count(*) from \"order\" as o inner join order_detail as od on od.order_id = o.id;").Scan(&result)
+	err := postgresDb.QueryRowContext(ctx, "SET enable_hashjoin = off; select count(*) from \"order\" as o inner join order_detail as od on od.order_id = o.id;").Scan(&result)
 	if err != nil {
 		log.Fatal("unable to execute query", err)
 	}
@@ -96,7 +96,7 @@ func MsSql05(ctx context.Context) {
 	defer cancel()
 
 	var result int32
-	err := mssql_db.QueryRowContext(ctx, "select count(*) from [order] as o inner join order_detail as od on od.order_id = o.id;").Scan(&result)
+	err := mssqlDb.QueryRowContext(ctx, "select count(*) from [order] as o inner join order_detail as od on od.order_id = o.id;").Scan(&result)
 	if err != nil {
 		log.Fatal("unable to execute query", err)
 	}
@@ -167,50 +167,50 @@ func TestDemo(t *testing.T) {
 	}
 
 	// MySQL
-	mysql_db, err = sql.Open("mysql", "root:mysql@tcp(127.0.0.1:3306)/test_db")
-	defer mysql_db.Close()
+	mysqlDb, err = sql.Open("mysql", "root:mysql@tcp(127.0.0.1:3306)/test_db")
+	defer mysqlDb.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
-	mysql_db.SetConnMaxLifetime(0)
-	mysql_db.SetMaxIdleConns(3)
-	mysql_db.SetMaxOpenConns(3)
-	Ping(ctx, mysql_db)
+	mysqlDb.SetConnMaxLifetime(0)
+	mysqlDb.SetMaxIdleConns(3)
+	mysqlDb.SetMaxOpenConns(3)
+	Ping(ctx, mysqlDb)
 
 	// PostgreSQL
-	postgres_db, err = sql.Open("postgres", "postgres://postgres:postgres@localhost:5432/test_db?sslmode=disable")
-	defer postgres_db.Close()
+	postgresDb, err = sql.Open("postgres", "postgres://postgres:postgres@localhost:5432/test_db?sslmode=disable")
+	defer postgresDb.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
-	postgres_db.SetConnMaxLifetime(0)
-	postgres_db.SetMaxIdleConns(3)
-	postgres_db.SetMaxOpenConns(3)
-	Ping(ctx, postgres_db)
+	postgresDb.SetConnMaxLifetime(0)
+	postgresDb.SetMaxIdleConns(3)
+	postgresDb.SetMaxOpenConns(3)
+	Ping(ctx, postgresDb)
 
 	// MSSQL
-	mssql_db, err = sql.Open("sqlserver", "sqlserver://SA:myStrong(!)Password@localhost:1433?database=test_db")
-	defer mssql_db.Close()
+	mssqlDb, err = sql.Open("sqlserver", "sqlserver://SA:myStrong(!)Password@localhost:1433?database=test_db")
+	defer mssqlDb.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
-	mssql_db.SetConnMaxLifetime(0)
-	mssql_db.SetMaxIdleConns(3)
-	mssql_db.SetMaxOpenConns(3)
-	Ping(ctx, mssql_db)
+	mssqlDb.SetConnMaxLifetime(0)
+	mssqlDb.SetMaxIdleConns(3)
+	mssqlDb.SetMaxOpenConns(3)
+	Ping(ctx, mssqlDb)
 
 	result := make(map[string]string, len(data)*3)
 
 	for _, d := range data {
-		duration := ExecQuery(ctx, d.f, mysql_db, d.mysql_query, d.execs)
+		duration := ExecQuery(ctx, d.f, mysqlDb, d.mysql_query, d.execs)
 		key := fmt.Sprintf("%s - mysql", d.name)
 		result[key] = fmt.Sprintf("%s", duration/time.Duration(config.TestExecutions))
 
-		duration = ExecQuery(ctx, d.f, postgres_db, d.postgres_query, d.execs)
+		duration = ExecQuery(ctx, d.f, postgresDb, d.postgres_query, d.execs)
 		key = fmt.Sprintf("%s - postgres", d.name)
 		result[key] = fmt.Sprintf("%s", duration/time.Duration(config.TestExecutions))
 
-		duration = ExecQuery(ctx, d.f, mssql_db, d.mssql_query, d.execs)
+		duration = ExecQuery(ctx, d.f, mssqlDb, d.mssql_query, d.execs)
 		key = fmt.Sprintf("%s - mssql", d.name)
 		result[key] = fmt.Sprintf("%s", duration/time.Duration(config.TestExecutions))
 	}
