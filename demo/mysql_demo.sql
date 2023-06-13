@@ -4,18 +4,21 @@ explain analyze select id from client where id = 100000;
 
 explain analyze select count(*) from order_detail as od where order_id = 1;
 
+
 -- 02 - lookup by primary key + column not in index
 explain analyze select id, name from client where id = 1;
 explain analyze select id, name from client where id = 100000;
+
 
 -- 03 - min and max
 explain analyze select min(id) from client;
 explain analyze select max(id) from client;
 explain analyze select min(id) + max(id) from client;
 
+
 -- 04 - index seek with complex condition
-explain analyze select id, name from client where id >= 1 and id < 10000 and id < 2;
-explain analyze select count(order_id), '' from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;
+explain analyze select count(*) from client where id >= 1 and id < 10000 and id < 2;
+explain analyze select count(*) from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;
 
 # set @sql = 'select count(order_id), '''' from order_detail where order_id >= ? and order_id < ? and order_id < ?';
 # prepare stmt from @sql;
@@ -24,6 +27,16 @@ explain analyze select count(order_id), '' from order_detail where order_id >= 1
 # set @c = 2;
 # execute stmt using @a, @b, @c;
 # deallocate prepare stmt;
+
+
+-- 05 - nonclustered index seek vs. scan
+explain analyze select count(name) from client where country = 'UK'; -- 1, index scan
+explain analyze select count(name) from client where country = 'NL'; -- 9, bitmap index scan
+explain analyze select count(name) from client where country = 'FR'; -- 90
+explain analyze select count(name) from client where country = 'CY'; -- 900
+explain analyze select count(name) from client where country = 'US'; -- 4000
+explain analyze select count(name) from client where country >= 'US'; -- 7333, seq scan
+
 
 /*
  https://dev.mysql.com/doc/internals/en/prepared-stored-statement-execution.html
@@ -60,9 +73,8 @@ join information_schema.innodb_tables t on ii.table_id = t.table_id
 where t.name = 'test_db/order';
 
 
-explain analyze select * from client where country = 'FR';
 
-explain analyze select country, id from client where country = 'FR';
+
 
 select 'client' as tbl, count(*) as cnt from client
 union all select 'product', count(*) from product

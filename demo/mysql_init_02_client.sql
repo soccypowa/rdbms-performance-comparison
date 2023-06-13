@@ -24,18 +24,20 @@ select
     id,
     concat('client_', id),
     case
+        when id % 10000 = 0 then 'UK'
+        when id % 1000 = 0 then 'NL'
         when id % 100 = 0 then 'FR'
         when id % 10 = 0 then 'CY'
         when id % 2 = 0 then 'US'
         when id % 3 = 0 then 'DE'
-        else 'UK'
+        else 'XX'
         end,
     date_add('2020-01-01', interval id second)
 from numbers;
 
--- select country, count(*) from client group by country;
-
 create index idx_client_country on `client`(country);
+
+-- select country, count(*) from client group by country;
 
 insert into `client_ex`(id, address)
 select
