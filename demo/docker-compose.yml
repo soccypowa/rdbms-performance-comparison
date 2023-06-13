@@ -42,13 +42,13 @@ services:
       MSSQL_SA_PASSWORD: 'myStrong(!)Password'
       MSSQL_PID: Developer
 
-#  mssql2019:
-#    image: mcr.microsoft.com/mssql/server:2019-CU20-ubuntu-20.04
-#    platform: linux/amd64
-#    ports:
-#      - "1433:1433"
-#    environment:
-#      ACCEPT_EULA: Y
-#      MSSQL_USER: SA
-#      MSSQL_SA_PASSWORD: 'myStrong(!)Password'
-#      MSSQL_PID: Developer
+  mssql2019:
+    image: mcr.microsoft.com/mssql/server:2019-CU20-ubuntu-20.04
+    platform: linux/amd64
+    ports:
+      - "1434:1433"
+    environment:
+      ACCEPT_EULA: Y
+      MSSQL_USER: SA
+      MSSQL_SA_PASSWORD: 'myStrong(!)Password'
+      MSSQL_PID: Developer

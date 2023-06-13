@@ -2,6 +2,8 @@
 explain analyze select id from client where id = 1;
 explain analyze select id from client where id = 100000;
 
+explain analyze select count(*) from order_detail as od where order_id = 1;
+
 -- 02 - lookup by primary key + column not in index
 explain analyze select id, name from client where id = 1;
 explain analyze select id, name from client where id = 100000;
@@ -9,7 +11,26 @@ explain analyze select id, name from client where id = 100000;
 -- 03 - min and max
 explain analyze select min(id) from client;
 explain analyze select max(id) from client;
-explain analyze select min(id), max(id) from client;
+explain analyze select min(id) + max(id) from client;
+
+-- 04 - index seek with complex condition
+explain analyze select id, name from client where id >= 1 and id < 10000 and id < 2;
+explain analyze select count(order_id), '' from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;
+
+# set @sql = 'select count(order_id), '''' from order_detail where order_id >= ? and order_id < ? and order_id < ?';
+# prepare stmt from @sql;
+# set @a = 1;
+# set @b = 10000;
+# set @c = 2;
+# execute stmt using @a, @b, @c;
+# deallocate prepare stmt;
+
+/*
+ https://dev.mysql.com/doc/internals/en/prepared-stored-statement-execution.html
+
+ That basically says that the execution plan created for the prepared statement at compile time is not used. At
+ execution time, once the variables are bound, it uses the values to create a new execution plan and uses that one.
+ */
 
 
 /*
