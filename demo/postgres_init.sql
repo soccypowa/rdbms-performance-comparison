@@ -12,10 +12,10 @@ create table client (
 );
 
 create table client_ex (
-id int not null,
-address varchar(1000) null,
+    id int not null,
+    address varchar(1000) null,
 
-primary key (id)
+    primary key (id)
 );
 
 insert into client(id, name, country, insert_dt)
@@ -30,7 +30,18 @@ select
         else 'UK'
         end,
     timestamp '2020-01-01' + id * interval '1 second'
-from generate_series(1, 10000000, 1) as numbers(id);
+from generate_series(1, 10000, 1) as numbers(id);
+
+-- select country, count(*) from client group by country;
+
+create index idx_client_country on client(country);
+
+insert into client_ex(id, address)
+select
+    id,
+    concat('client_', id, '_', repeat('x', 900))
+from generate_series(1, 10000, 1) as numbers(id);
+
 
 
 -- order
