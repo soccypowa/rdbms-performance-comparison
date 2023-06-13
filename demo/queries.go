@@ -3,7 +3,6 @@ package demo
 import (
 	"context"
 	"database/sql"
-	_ "github.com/solontsev/rdbms-performance-comparison/config"
 	"log"
 	"time"
 )
