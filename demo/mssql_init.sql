@@ -172,9 +172,9 @@ with tmp as (
 insert into order_detail(order_id, product_id, quantity, price)
 select
     id,
-    floor(rand() * 1000000) as product_id,
-    floor(rand() * 10) + 1 as quantity,
-    floor(rand() * 100) as price
+    floor(rand(checksum(newid())) * 1000000) as product_id,
+    floor(rand(checksum(newid())) * 10) + 1 as quantity,
+    floor(rand(checksum(newid())) * 100) as price
 from tmp;
 go
 
