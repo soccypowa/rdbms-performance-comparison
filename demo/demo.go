@@ -134,7 +134,7 @@ func main() {
 			}
 		}
 
-		err := db.Close()
+		db.Close()
 	}
 
 	prettyResult, err := json.MarshalIndent(result, "", "  ")
