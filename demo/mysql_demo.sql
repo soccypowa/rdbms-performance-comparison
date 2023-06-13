@@ -25,8 +25,15 @@ explain analyze select count(*) from order_detail where order_id >= 1 and order_
 # set @a = 1;
 # set @b = 10000;
 # set @c = 2;
-# execute stmt using @a, @b, @c;
+# execute stmt using @a, @b, @c;d
 # deallocate prepare stmt;
+
+/*
+ https://dev.mysql.com/doc/internals/en/prepared-stored-statement-execution.html
+
+ That basically says that the execution plan created for the prepared statement at compile time is not used. At
+ execution time, once the variables are bound, it uses the values to create a new execution plan and uses that one.
+ */
 
 
 -- 05 - nonclustered index seek vs. scan
@@ -38,12 +45,20 @@ explain analyze select count(name) from client where country = 'US'; -- 4000
 explain analyze select count(name) from client where country >= 'US'; -- 7333, seq scan
 
 
-/*
- https://dev.mysql.com/doc/internals/en/prepared-stored-statement-execution.html
+-- 06 - join 2 sorted tables
+explain analyze select count(*) from client as c inner join client_ex as c_ex on c_ex.id = c.id;
+explain analyze select count(*) from `order` as o inner join order_detail as od on od.order_id = o.id;
 
- That basically says that the execution plan created for the prepared statement at compile time is not used. At
- execution time, once the variables are bound, it uses the values to create a new execution plan and uses that one.
- */
+explain analyze select count(*) from `order` as o inner join (select order_id from order_detail group by order_id) as od on od.order_id = o.id;
+
+explain analyze select /*+ BNL(o, od) */ count(*) from `order` as o inner join order_detail as od on od.order_id = o.id;
+
+explain analyze select count(*) from client as a inner join client as b on a.name < b.name;
+
+-- https://dev.mysql.com/doc/refman/8.0/en/optimizer-hints.html#optimizer-hints-table-level
+
+
+
 
 
 /*
@@ -73,34 +88,8 @@ join information_schema.innodb_tables t on ii.table_id = t.table_id
 where t.name = 'test_db/order';
 
 
-
-
-
+-- Check test data
 select 'client' as tbl, count(*) as cnt from client
 union all select 'product', count(*) from product
 union all select 'order', count(*) from `order`
 union all select 'order_detail', count(*) from `order_detail`;
-
-explain analyze select *
-from `order` as o
-inner join order_detail as od on o.id = od.order_id
-where o.id < 200;
-
-explain analyze select *
-from `order` as o
-inner join order_detail as od on o.id = od.order_id
-where od.order_id < 200;
-
-explain analyze select * from `order` as o
-where (o.client_id < 10000 or o.client_id > 90000) and o.group_id < 5;
-
-select count(*) from `order` as o where o.client_id < 10000;
-select count(*) from `order` as o where o.group_id < 10;
-
-explain analyze select count(*)
-from `order` as o
-inner join order_detail od on o.id = od.order_id;
-
-explain analyze select count(c.country), count(c_ex.address)
-from client as c
-inner join client_ex as c_ex on c_ex.id = c.id;

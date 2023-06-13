@@ -32,25 +32,21 @@ explain analyze select count(name) from client where country = 'US'; -- 4000
 explain analyze select count(name) from client where country >= 'US'; -- 7333, seq scan
 
 
-
-
-
-
-select count(*) from "order" as o inner join order_detail as od on od.order_id = o.id;
-
-explain analyze select count(*) from "order" as o inner join order_detail as od on od.order_id = o.id;
-explain analyze select count(*) from "order" as o inner join (select order_id from order_detail group by order_id) as od on od.order_id = o.id;
-
+-- 06 - join 2 sorted tables
 explain analyze select count(*) from client as c inner join client_ex as c_ex on c_ex.id = c.id;
-
-select count(*) from "order" as o inner join order_detail as od on od.order_id = o.id;
+explain analyze select count(*) from "order" as o inner join order_detail as od on od.order_id = o.id;
 
 /*
-SET enable_hashjoin = off;
-SET enable_hashjoin = on;
-SET max_parallel_workers_per_gather = 0;
+set enable_hashjoin = off;
+set enable_hashjoin = on;
+set max_parallel_workers_per_gather = 0;
 
-SHOW max_parallel_workers_per_gather;
+show max_parallel_workers_per_gather;
  */
 
+explain analyze select count(*) from "order" as o inner join (select order_id from order_detail group by order_id) as od on od.order_id = o.id;
 
+explain analyze select count(*) from client as a inner join client as b on a.name < b.name;
+
+------------------------------------------------------------------------------------------------------------------------
+explain analyze select order_id from order_detail group by order_id;

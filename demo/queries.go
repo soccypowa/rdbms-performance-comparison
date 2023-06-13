@@ -181,24 +181,36 @@ var Tests = map[string]testData{
 		QueryString,
 		200,
 	},
-	//{
-	//	"05",
-	//	map[string]map[string]string{
-	//		"mysql": {
-	//			"": "select count(*) from `order` as o inner join `order_detail` as od on od.order_id = o.id;",
-	//		},
-	//		"postgres": {
-	//			"":             "select count(*) from \"order\" as o inner join order_detail as od on od.order_id = o.id;",
-	//			"hashjoin=off": "SET enable_hashjoin = off; select count(*) from \"order\" as o inner join order_detail as od on od.order_id = o.id;",
-	//		},
-	//		"mssql2022": {
-	//			"":          "select count(*) from [order] as o inner join order_detail as od on od.order_id = o.id;",
-	//			"loop join": "select count(*) from [order] as o inner loop join order_detail as od on od.order_id = o.id;",
-	//		},
-	//	},
-	//	Query05,
-	//	0,
-	//},
+	"06": {
+		"join 2 sorted tables",
+		map[string]map[string]string{
+			MySql: {
+				"client-ex":    "select count(*) from client as c inner join client_ex as c_ex on c_ex.id = c.id;",
+				"order-detail": "select count(*) from `order` as o inner join `order_detail` as od on od.order_id = o.id;",
+				"pre-agg":      "select count(*) from `order` as o inner join (select order_id from order_detail group by order_id) as od on od.order_id = o.id;",
+			},
+			PostgreSql: {
+				"client-ex":    "select count(*) from client as c inner join client_ex as c_ex on c_ex.id = c.id;",
+				"order-detail": "select count(*) from \"order\" as o inner join order_detail as od on od.order_id = o.id;",
+				"hashjoin=off": "set enable_hashjoin = off; select count(*) from \"order\" as o inner join order_detail as od on od.order_id = o.id; set enable_hashjoin = on;",
+				"pre-agg":      "select count(*) from \"order\" as o inner join (select order_id from order_detail group by order_id) as od on od.order_id = o.id;",
+			},
+			MsSql19: {
+				"client-ex":    "select count(*) from client as c inner join client_ex as c_ex on c_ex.id = c.id;",
+				"order-detail": "select count(*) from [order] as o inner join order_detail as od on od.order_id = o.id;",
+				"loop join":    "select count(*) from [order] as o inner loop join order_detail as od on od.order_id = o.id;",
+				"pre-agg":      "select count(*) from [order] as o inner join (select order_id from order_detail group by order_id) as od on od.order_id = o.id;",
+			},
+			MsSql22: {
+				"client-ex":    "select count(*) from client as c inner join client_ex as c_ex on c_ex.id = c.id;",
+				"order-detail": "select count(*) from [order] as o inner join order_detail as od on od.order_id = o.id;",
+				"loop join":    "select count(*) from [order] as o inner loop join order_detail as od on od.order_id = o.id;",
+				"pre-agg":      "select count(*) from [order] as o inner join (select order_id from order_detail group by order_id) as od on od.order_id = o.id;",
+			},
+		},
+		QueryInt,
+		0,
+	},
 }
 
 func QueryInt(ctx context.Context, db *sql.DB, query string) {

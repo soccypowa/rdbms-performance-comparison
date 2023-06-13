@@ -46,16 +46,12 @@ select count(name) from client where country = 'US'; -- 4000
 select count(name) from client where country >= 'US'; -- 7333
 
 
--- create table dbo.seek_predicate_example (
---                                             dt datetime not null,
---                                             some_data char(1000) null
--- );
---
--- insert into dbo.seek_predicate_example (dt)
--- select top (100000)
---     dateadd(second, cast(floor(rand(checksum(newid())) * 3600 * 24 * 10) as int), '20160101')
--- from sys.all_columns as t1
---          cross join sys.all_columns as t2;
---
--- create clustered index ix_cl_seek_predicate_example on dbo.seek_predicate_example (dt);
+-- 06 - join 2 sorted tables
+select count(*) from client as c inner join client_ex as c_ex on c_ex.id = c.id;
+select count(*) from [order] as o inner join order_detail as od on od.order_id = o.id;
 
+select count(*) from [order] as o inner loop join order_detail as od on od.order_id = o.id;
+select sum(c) from [order] as o cross apply (select count(*) as c from order_detail as od where od.order_id = o.id) as t;
+select count(*) from [order] as o inner join (select order_id from order_detail group by order_id) as od on od.order_id = o.id;
+
+select count(*) from client as a inner join client as b on a.name < b.name;
