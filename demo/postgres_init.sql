@@ -147,3 +147,28 @@ select
     case when id % 10 = 0 then 'deleted' else 'active' end as status_varchar,
     case when id % 10 = 0 then 'deleted' else 'active' end as status_text
 from generate_series(1, 10000000, 1) as numbers(id);
+
+
+-- large_group_by_table
+drop table if exists large_group_by_table;
+
+create table large_group_by_table (
+                                      id int not null,
+                                      c1 int not null,
+                                      c2 int not null,
+                                      c3 int not null,
+                                      data char(200) not null,
+
+                                      primary key (id)
+);
+
+insert into large_group_by_table(id, c1, c2, c3, data)
+select
+    id,
+    floor(random() * 10) as c1,
+    floor(random() * 100) as c2,
+    floor(random() * 1000) as c3,
+    repeat('x', 200) as data
+from generate_series(1, 1000000, 1) as numbers(id);
+
+create index idx_large_group_by_table_c1_c2_c3 on large_group_by_table(c1, c2, c3);

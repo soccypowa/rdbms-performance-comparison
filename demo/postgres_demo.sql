@@ -50,3 +50,9 @@ explain analyze select count(*) from client as a inner join client as b on a.nam
 
 ------------------------------------------------------------------------------------------------------------------------
 explain analyze select order_id from order_detail group by order_id;
+
+
+-- 07 - grouping
+explain analyze select min(min_product_id) from (select order_id, min(product_id) as min_product_id from order_detail group by order_id) as t;
+
+explain analyze select min(min_c2) from (select c1, min(c2) as min_c2 from large_group_by_table group by c1) as t;

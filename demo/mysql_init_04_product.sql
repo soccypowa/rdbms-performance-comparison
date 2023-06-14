@@ -15,7 +15,7 @@ with tmp as (
     select
             a.id + b.id * 10000 as id
     from numbers as a
-             cross join numbers as b
+    cross join numbers as b
 )
 select
     id,
