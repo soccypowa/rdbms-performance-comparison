@@ -215,15 +215,15 @@ var Tests = map[string]testData{
 		"grouping",
 		map[string]map[string]string{
 			MySql: {
-				"":        "select min(min_c2) from (select c1, min(c2) as min_c2 from large_group_by_table group by c1) as t",
+				//"":        "select min(min_c2) from (select c1, min(c2) as min_c2 from large_group_by_table group by c1) as t",
 				"default": "select min(min_product_id) from (select order_id, min(product_id) as min_product_id from order_detail group by order_id) as t;",
 			},
 			PostgreSql: {
-				"":        "select min(min_c2) from (select c1, min(c2) as min_c2 from large_group_by_table group by c1) as t",
+				//"":        "select min(min_c2) from (select c1, min(c2) as min_c2 from large_group_by_table group by c1) as t",
 				"default": "select min(min_product_id) from (select order_id, min(product_id) as min_product_id from order_detail group by order_id) as t;",
 			},
 			MsSql22: {
-				"": "select min(min_c2) from (select c1, min(c2) as min_c2 from large_group_by_table group by c1) as t",
+				//"": "select min(min_c2) from (select c1, min(c2) as min_c2 from large_group_by_table group by c1) as t",
 				//"optimized":             "select min(t3.min_c2)\nfrom (select distinct(c1) as c1 from large_group_by_table) as t\ncross apply (select min(t2.c2) as min_c2 from large_group_by_table as t2 where t2.c1 = t.c1) as t3;",
 				//"super-optimized":       "select min(t4.min_c2)\nfrom (select min(c1) as min_c1, max(c1) as max_c1 from large_group_by_table) as t\ncross apply (select n.id from numbers as n where n.id >= t.min_c1 and n.id <= t.max_c1) as t2\ncross apply (select min(t3.c2) as min_c2 from large_group_by_table as t3 where t3.c1 = t2.id) as t4;\n",
 				//"super-super-optimized": "select min(t3.min_c2)\nfrom (select 0 as c1 union all select 1 union all select 2 union all select 3 union all select 4 union all select 5 union all select 6 union all select 7 union all select 8 union all select 9) as t\ncross apply (select min(t2.c2) as min_c2 from large_group_by_table as t2 where t2.c1 = t.c1) as t3;",
