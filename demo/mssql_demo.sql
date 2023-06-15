@@ -6,6 +6,7 @@ set showplan_xml off;
 set statistics profile off;
 
 set showplan_text on;
+set showplan_xml on;
 set statistics profile on;
 set statistics io on;
 set statistics time on;
@@ -74,3 +75,41 @@ cross apply (select min(t3.c2) as min_c2 from large_group_by_table as t3 where t
 select min(t3.min_c2)
 from (select 0 as c1 union all select 1 union all select 2 union all select 3 union all select 4 union all select 5 union all select 6 union all select 7 union all select 8 union all select 9) as t
 cross apply (select min(t2.c2) as min_c2 from large_group_by_table as t2 where t2.c1 = t.c1) as t3;
+
+
+-- 08 - grouping with partial aggregation
+ALTER DATABASE test_db SET COMPATIBILITY_LEVEL = 140; -- 2017
+ALTER DATABASE test_db SET COMPATIBILITY_LEVEL = 150; -- 2019
+ALTER DATABASE test_db SET COMPATIBILITY_LEVEL = 160; -- 2022
+
+select count(*)
+from (
+    select p.name, count(*) as cnt
+    from [order] as o
+    inner join large_group_by_table as l on l.id = o.id
+    inner join product as p on p.id = l.c1
+    group by p.name
+) as t;
+
+select count(*)
+from (
+    select p.name, count(*) as cnt
+    from [order] as o
+    inner join large_group_by_table as l on l.id = o.id
+    inner join product as p on p.id = l.c4
+    group by p.name
+) as t;
+
+
+-- 09 - combine select from 2 indexes
+select count(*)
+from large_group_by_table as l
+where l.c2 = 1 and l.c3 = 1
+
+select count(*)
+from large_group_by_table as l
+where (l.c2 = 1 or l.c2 = 2 or l.c2 = 50) and l.c3 = 1;
+
+select count(*)
+from large_group_by_table as l
+where (l.c2 = 1 or l.c2 = 2 or l.c2 > 50) and l.c3 = 1;

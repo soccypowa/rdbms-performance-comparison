@@ -134,10 +134,10 @@ create table filter_10m (
     status_id_int int not null,
     status_char char(7) not null,
     status_varchar varchar(7) not null,
-    status text not null
+    status_text text not null
 );
 
-insert into filter_10m (id, data, status_id_tinyint, status_id_int, status_char, status_varchar, status)
+insert into filter_10m (id, data, status_id_tinyint, status_id_int, status_char, status_varchar, status_text)
 select
     id,
     repeat('a', 100) as data,
@@ -149,6 +149,31 @@ select
 from generate_series(1, 10000000, 1) as numbers(id);
 
 
+-- filter_1m
+drop table if exists filter_1m;
+
+create table filter_1m (
+    id int not null,
+    data char(100) not null,
+    status_id_tinyint smallint not null,
+    status_id_int int not null,
+    status_char char(7) not null,
+    status_varchar varchar(7) not null,
+    status_text text not null
+);
+
+insert into filter_1m (id, data, status_id_tinyint, status_id_int, status_char, status_varchar, status_text)
+select
+    id,
+    repeat('a', 100) as data,
+    case when id % 10 = 0 then 0 else 1 end as status_id_tinyint,
+    case when id % 10 = 0 then 0 else 1 end as status_id_int,
+    case when id % 10 = 0 then 'deleted' else 'active' end as status_char,
+    case when id % 10 = 0 then 'deleted' else 'active' end as status_varchar,
+    case when id % 10 = 0 then 'deleted' else 'active' end as status_text
+from generate_series(1, 1000000, 1) as numbers(id);
+
+
 -- large_group_by_table
 drop table if exists large_group_by_table;
 
@@ -157,18 +182,24 @@ create table large_group_by_table (
                                       c1 int not null,
                                       c2 int not null,
                                       c3 int not null,
+                                      c4 int not null,
                                       data char(200) not null,
 
                                       primary key (id)
 );
 
-insert into large_group_by_table(id, c1, c2, c3, data)
+insert into large_group_by_table(id, c1, c2, c3, c4, data)
 select
     id,
     floor(random() * 10) as c1,
     floor(random() * 100) as c2,
     floor(random() * 1000) as c3,
+    floor(random() * 1000000) as c4,
     repeat('x', 200) as data
 from generate_series(1, 1000000, 1) as numbers(id);
 
-create index idx_large_group_by_table_c1_c2_c3 on large_group_by_table(c1, c2, c3);
+create index idx_large_group_by_table_c1_c2_c3_c4 on large_group_by_table(c1, c2, c3, c4);
+
+create index idx_large_group_by_table_c2 on large_group_by_table(c2);
+
+create index idx_large_group_by_table_c3 on large_group_by_table(c3);

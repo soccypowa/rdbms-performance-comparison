@@ -197,7 +197,7 @@ create table filter_10m (
     status_id_int int not null,
     status_char char(7) not null,
     status_varchar varchar(7) not null,
-    status varchar(max) not null
+    status_text varchar(max) not null
 );
 go
 
@@ -207,7 +207,7 @@ with tmp as (
     from numbers as a
     cross join numbers as b
 )
-insert into filter_10m (id, data, status_id_tinyint, status_id_int, status_char, status_varchar, status)
+insert into filter_10m (id, data, status_id_tinyint, status_id_int, status_char, status_varchar, status_text)
 select
     id,
     replicate('a', 100) as data,
@@ -221,6 +221,41 @@ where id < 10000000;
 go
 
 
+-- filter_1m
+drop table if exists filter_1m;
+go
+
+create table filter_1m (
+    id int not null,
+    data char(100) not null,
+    status_id_tinyint tinyint not null,
+    status_id_int int not null,
+    status_char char(7) not null,
+    status_varchar varchar(7) not null,
+    status_text varchar(max) not null
+);
+go
+
+with tmp as (
+    select
+            a.id + b.id * 10000 as id
+    from numbers as a
+             cross join numbers as b
+)
+insert into filter_1m (id, data, status_id_tinyint, status_id_int, status_char, status_varchar, status_text)
+select
+    id,
+    replicate('a', 100) as data,
+    case when id % 10 = 0 then 0 else 1 end as status_id_tinyint,
+    case when id % 10 = 0 then 0 else 1 end as status_id_int,
+    case when id % 10 = 0 then 'deleted' else 'active' end as status_char,
+    case when id % 10 = 0 then 'deleted' else 'active' end as status_varchar,
+    case when id % 10 = 0 then 'deleted' else 'active' end as status_text
+from tmp
+where id < 1000000;
+go
+
+
 -- large_group_by_table
 drop table if exists large_group_by_table;
 
@@ -229,6 +264,7 @@ create table large_group_by_table (
     c1 int not null,
     c2 int not null,
     c3 int not null,
+    c4 int not null,
     data char(200) not null,
 
     primary key clustered (id)
@@ -240,14 +276,19 @@ with tmp as (
     from numbers as a
              cross join numbers as b
 )
-insert into large_group_by_table(id, c1, c2, c3, data)
+insert into large_group_by_table(id, c1, c2, c3, c4, data)
 select
     id,
     floor(rand(checksum(newid())) * 10) as c1,
     floor(rand(checksum(newid())) * 100) as c2,
     floor(rand(checksum(newid())) * 1000) as c3,
+    floor(rand(checksum(newid())) * 1000000) as c4,
     replicate('x', 200) as data
 from tmp
 where id < 1000000;
 
-create nonclustered index idx_large_group_by_table_c1_c2_c3 on large_group_by_table(c1, c2, c3);
+create nonclustered index idx_large_group_by_table_c1_c2_c3_c4 on large_group_by_table(c1, c2, c3, c4);
+
+create nonclustered index idx_large_group_by_table_c2 on large_group_by_table(c2);
+
+create nonclustered index idx_large_group_by_table_c3 on large_group_by_table(c3);

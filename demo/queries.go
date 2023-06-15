@@ -20,6 +20,41 @@ type testData struct {
 }
 
 var Tests = map[string]testData{
+	"00": {
+		"filter 10 million rows table",
+		map[string]map[string]string{
+			MySql: {
+				"tinyint": "select count(*) from filter_1m where status_id_tinyint = 1;",
+				"int":     "select count(*) from filter_1m where status_id_int = 1;",
+				"char":    "select count(*) from filter_1m where status_char = 'active';",
+				"varchar": "select count(*) from filter_1m where status_varchar = 'active';",
+				"text":    "select count(*) from filter_1m where status_text = 'active';",
+			},
+			PostgreSql: {
+				"tinyint": "select count(*) from filter_1m where status_id_tinyint = 1;",
+				"int":     "select count(*) from filter_1m where status_id_int = 1;",
+				"char":    "select count(*) from filter_1m where status_char = 'active';",
+				"varchar": "select count(*) from filter_1m where status_varchar = 'active';",
+				"text":    "select count(*) from filter_1m where status_text = 'active';",
+			},
+			MsSql19: {
+				"tinyint": "select count(*) from filter_1m where status_id_tinyint = 1;",
+				"int":     "select count(*) from filter_1m where status_id_int = 1;",
+				"char":    "select count(*) from filter_1m where status_char = 'active';",
+				"varchar": "select count(*) from filter_1m where status_varchar = 'active';",
+				"text":    "select count(*) from filter_1m where status_text = 'active';",
+			},
+			MsSql22: {
+				"tinyint": "select count(*) from filter_1m where status_id_tinyint = 1;",
+				"int":     "select count(*) from filter_1m where status_id_int = 1;",
+				"char":    "select count(*) from filter_1m where status_char = 'active';",
+				"varchar": "select count(*) from filter_1m where status_varchar = 'active';",
+				"text":    "select count(*) from filter_1m where status_text = 'active';",
+			},
+		},
+		QueryInt,
+		0,
+	},
 	"01": {
 		"lookup by primary key",
 		map[string]map[string]string{
@@ -232,6 +267,47 @@ var Tests = map[string]testData{
 		},
 		QueryInt,
 		0,
+	},
+	"08": {
+		"grouping with partial aggregation",
+		map[string]map[string]string{
+			MySql: {
+				"small": "select count(*)\nfrom (select p.name, count(*)\n      from `order` as o\n               inner join large_group_by_table as l on l.id = o.id\n               inner join product as p on p.id = l.c1\n      group by p.name\n) as t;",
+				"big":   "select count(*)\nfrom (\n    select p.name, count(*)\n    from `order` as o\n    inner join large_group_by_table as l on l.id = o.id\n    inner join product as p on p.id = l.c4\n    group by p.name\n) as t;",
+			},
+			PostgreSql: {
+				"small": "select count(*)\nfrom (select p.name, count(*)\n      from \"order\" as o\n               inner join large_group_by_table as l on l.id = o.id\n               inner join product as p on p.id = l.c1\n      group by p.name\n) as t;",
+				"big":   "select count(*)\nfrom (\n    select p.name, count(*)\n    from \"order\" as o\n    inner join large_group_by_table as l on l.id = o.id\n    inner join product as p on p.id = l.c4\n    group by p.name\n) as t;",
+			},
+			MsSql22: {
+				"small": "select count(*)\nfrom (select p.name, count(*) as cnt\n      from [order] as o\n               inner join large_group_by_table as l on l.id = o.id\n               inner join product as p on p.id = l.c1\n      group by p.name\n) as t;",
+				"big":   "select count(*)\nfrom (\n    select p.name, count(*) as cnt\n    from [order] as o\n    inner join large_group_by_table as l on l.id = o.id\n    inner join product as p on p.id = l.c4\n    group by p.name\n) as t;\n",
+			},
+		},
+		QueryInt,
+		0,
+	},
+	"09": {
+		"combine select from 2 indexes",
+		map[string]map[string]string{
+			MySql: {
+				"simple":       "select count(*)\nfrom large_group_by_table as l\nwhere l.c2 = 1 and l.c3 = 1;",
+				"complex":      "select count(*)\nfrom large_group_by_table as l\nwhere (l.c2 = 1 or l.c2 = 2 or l.c2 = 50) and l.c3 = 1;",
+				"more complex": "select count(*)\nfrom large_group_by_table as l\nwhere (l.c2 = 1 or l.c2 = 2 or l.c2 > 50) and l.c3 = 1;",
+			},
+			PostgreSql: {
+				"simple":       "select count(*)\nfrom large_group_by_table as l\nwhere l.c2 = 1 and l.c3 = 1;",
+				"complex":      "select count(*)\nfrom large_group_by_table as l\nwhere (l.c2 = 1 or l.c2 = 2 or l.c2 = 50) and l.c3 = 1;",
+				"more complex": "select count(*)\nfrom large_group_by_table as l\nwhere (l.c2 = 1 or l.c2 = 2 or l.c2 > 50) and l.c3 = 1;",
+			},
+			MsSql22: {
+				"simple":       "select count(*)\nfrom large_group_by_table as l\nwhere l.c2 = 1 and l.c3 = 1;",
+				"complex":      "select count(*)\nfrom large_group_by_table as l\nwhere (l.c2 = 1 or l.c2 = 2 or l.c2 = 50) and l.c3 = 1;",
+				"more complex": "select count(*)\nfrom large_group_by_table as l\nwhere (l.c2 = 1 or l.c2 = 2 or l.c2 > 50) and l.c3 = 1;",
+			},
+		},
+		QueryInt,
+		100,
 	},
 }
 

@@ -56,3 +56,37 @@ explain analyze select order_id from order_detail group by order_id;
 explain analyze select min(min_product_id) from (select order_id, min(product_id) as min_product_id from order_detail group by order_id) as t;
 
 explain analyze select min(min_c2) from (select c1, min(c2) as min_c2 from large_group_by_table group by c1) as t;
+
+
+-- 08 - grouping with partial aggregation
+explain analyze select count(*)
+from (
+    select p.name, count(*)
+    from "order" as o
+    inner join large_group_by_table as l on l.id = o.id
+    inner join product as p on p.id = l.c1
+    group by p.name
+) as t;
+
+explain analyze select count(*)
+from (
+    select p.name, count(*)
+    from "order" as o
+    inner join large_group_by_table as l on l.id = o.id
+    inner join product as p on p.id = l.c4
+    group by p.name
+) as t;
+
+
+-- 09 - combine select from 2 indexes
+explain analyze select count(*)
+from large_group_by_table as l
+where l.c2 = 1 and l.c3 = 1;
+
+explain analyze select count(*)
+from large_group_by_table as l
+where (l.c2 = 1 or l.c2 = 2 or l.c2 = 50) and l.c3 = 1;
+
+explain analyze select count(*)
+from large_group_by_table as l
+where (l.c2 = 1 or l.c2 = 2 or l.c2 > 50) and l.c3 = 1;
