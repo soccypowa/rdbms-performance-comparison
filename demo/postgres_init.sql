@@ -1,5 +1,6 @@
 -- client
 drop table if exists client;
+drop table if exists client_large;
 drop table if exists client_ex;
 
 create table client (
@@ -9,6 +10,15 @@ create table client (
     insert_dt timestamp not null,
 
     primary key (id)
+);
+
+create table client_large (
+                        id int not null,
+                        name varchar(100) not null,
+                        country char(2) not null,
+                        insert_dt timestamp not null,
+
+                        primary key (id)
 );
 
 create table client_ex (
@@ -35,6 +45,24 @@ select
 from generate_series(1, 10000, 1) as numbers(id);
 
 create index idx_client_country on client(country);
+
+insert into client_large(id, name, country, insert_dt)
+select
+    id,
+    concat('client_', id),
+    case
+        when id % 10000 = 0 then 'UK'
+        when id % 1000 = 0 then 'NL'
+        when id % 100 = 0 then 'FR'
+        when id % 10 = 0 then 'CY'
+        when id % 2 = 0 then 'US'
+        when id % 3 = 0 then 'DE'
+        else 'XX'
+        end,
+    timestamp '2020-01-01' + id * interval '1 second'
+from generate_series(1, 1000000, 1) as numbers(id);
+
+create index idx_client_large_country on client_large(country);
 
 -- select country, count(*) from client group by country;
 
@@ -163,6 +191,33 @@ create table filter_1m (
 );
 
 insert into filter_1m (id, data, status_id_tinyint, status_id_int, status_char, status_varchar, status_text)
+select
+    id,
+    repeat('a', 100) as data,
+    case when id % 10 = 0 then 0 else 1 end as status_id_tinyint,
+    case when id % 10 = 0 then 0 else 1 end as status_id_int,
+    case when id % 10 = 0 then 'deleted' else 'active' end as status_char,
+    case when id % 10 = 0 then 'deleted' else 'active' end as status_varchar,
+    case when id % 10 = 0 then 'deleted' else 'active' end as status_text
+from generate_series(1, 1000000, 1) as numbers(id);
+
+
+-- filter_1m_with_pk
+drop table if exists filter_1m_with_pk;
+
+create table filter_1m_with_pk (
+                           id int not null,
+                           data char(100) not null,
+                           status_id_tinyint smallint not null,
+                           status_id_int int not null,
+                           status_char char(7) not null,
+                           status_varchar varchar(7) not null,
+                           status_text text not null,
+
+                           primary key (id)
+);
+
+insert into filter_1m_with_pk (id, data, status_id_tinyint, status_id_int, status_char, status_varchar, status_text)
 select
     id,
     repeat('a', 100) as data,

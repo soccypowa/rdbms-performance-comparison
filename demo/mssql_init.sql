@@ -30,6 +30,8 @@ cross join sys.all_columns as b;
 -- client
 drop table if exists client;
 go
+drop table if exists client_large;
+go
 drop table if exists client_ex;
 go
 
@@ -40,6 +42,16 @@ create table client (
     insert_dt datetime not null,
 
     primary key clustered (id)
+);
+go
+
+create table client_large (
+                        id int not null,
+                        name varchar(100) not null,
+                        country char(2) not null,
+                        insert_dt datetime not null,
+
+                        primary key clustered (id)
 );
 go
 
@@ -69,6 +81,33 @@ from numbers;
 go
 
 create nonclustered index idx_client_country on client(country);
+go
+
+with tmp as (
+    select
+            a.id + b.id * 10000 as id
+    from numbers as a
+             cross join numbers as b
+)
+insert into client_large(id, name, country, insert_dt)
+select
+    id,
+    concat('client_', id),
+    case
+        when id % 10000 = 0 then 'UK'
+        when id % 1000 = 0 then 'NL'
+        when id % 100 = 0 then 'FR'
+        when id % 10 = 0 then 'CY'
+        when id % 2 = 0 then 'US'
+        when id % 3 = 0 then 'DE'
+        else 'XX'
+        end,
+    dateadd(second, id, '2020-01-01')
+from tmp
+where id < 1000000;
+go
+
+create nonclustered index idx_client_large_country on client_large(country);
 go
 
 -- select country, count(*) from client group by country;
@@ -243,6 +282,43 @@ with tmp as (
              cross join numbers as b
 )
 insert into filter_1m (id, data, status_id_tinyint, status_id_int, status_char, status_varchar, status_text)
+select
+    id,
+    replicate('a', 100) as data,
+    case when id % 10 = 0 then 0 else 1 end as status_id_tinyint,
+    case when id % 10 = 0 then 0 else 1 end as status_id_int,
+    case when id % 10 = 0 then 'deleted' else 'active' end as status_char,
+    case when id % 10 = 0 then 'deleted' else 'active' end as status_varchar,
+    case when id % 10 = 0 then 'deleted' else 'active' end as status_text
+from tmp
+where id < 1000000;
+go
+
+
+-- filter_1m_with_pk
+drop table if exists filter_1m_with_pk;
+go
+
+create table filter_1m_with_pk (
+                           id int not null,
+                           data char(100) not null,
+                           status_id_tinyint tinyint not null,
+                           status_id_int int not null,
+                           status_char char(7) not null,
+                           status_varchar varchar(7) not null,
+                           status_text varchar(max) not null,
+
+                           primary key clustered (id)
+);
+go
+
+with tmp as (
+    select
+            a.id + b.id * 10000 as id
+    from numbers as a
+             cross join numbers as b
+)
+insert into filter_1m_with_pk (id, data, status_id_tinyint, status_id_int, status_char, status_varchar, status_text)
 select
     id,
     replicate('a', 100) as data,

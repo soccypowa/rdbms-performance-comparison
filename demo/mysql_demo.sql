@@ -1,3 +1,24 @@
+-- 00 - table scan
+explain analyze select count(*) from filter_1m where status_id_tinyint = 0;
+explain analyze select count(*) from filter_1m where status_id_int = 0;
+explain analyze select count(*) from filter_1m where status_char = 'deleted';
+explain analyze select count(*) from filter_1m where status_varchar = 'deleted';
+explain analyze select count(*) from filter_1m where status_text = 'deleted';
+
+explain analyze select count(*) from filter_1m where status_id_tinyint = 1;
+explain analyze select count(*) from filter_1m where status_id_int = 1;
+explain analyze select count(*) from filter_1m where status_char = 'active';
+explain analyze select count(*) from filter_1m where status_varchar = 'active';
+explain analyze select count(*) from filter_1m where status_text = 'active';
+
+explain analyze select count(*) from filter_1m;
+explain analyze select count(*) from filter_1m_with_pk;
+
+# select @@innodb_parallel_read_threads;
+# set local innodb_parallel_read_threads=1;
+
+-- https://www.percona.com/blog/mysql-8-0-14-a-road-to-parallel-query-execution-is-wide-open/
+
 -- 01 - lookup by primary key
 explain analyze select id from client where id = 1;
 explain analyze select id from client where id = 100000;
@@ -37,12 +58,26 @@ explain analyze select count(*) from order_detail where order_id >= 1 and order_
 
 
 -- 05 - nonclustered index seek vs. scan
-explain analyze select count(name) from client where country = 'UK'; -- 1, index scan
-explain analyze select count(name) from client where country = 'NL'; -- 9, bitmap index scan
+explain analyze select count(name) from client where country = 'UK'; -- 1
+explain analyze select count(name) from client where country = 'NL'; -- 9
 explain analyze select count(name) from client where country = 'FR'; -- 90
 explain analyze select count(name) from client where country = 'CY'; -- 900
 explain analyze select count(name) from client where country = 'US'; -- 4000
 explain analyze select count(name) from client where country >= 'US'; -- 7333, seq scan
+
+explain analyze select min(name) from client where country = 'UK'; -- 1
+explain analyze select min(name) from client where country = 'NL'; -- 9
+explain analyze select min(name) from client where country = 'FR'; -- 90
+explain analyze select min(name) from client where country = 'CY'; -- 900
+explain analyze select min(name) from client where country = 'US'; -- 4000
+explain analyze select min(name) from client where country >= 'US'; -- 7333, seq scan
+
+explain analyze select min(name) from client_large where country = 'UK'; -- 100, index lookup
+explain analyze select min(name) from client_large where country = 'NL'; -- 900
+explain analyze select min(name) from client_large where country = 'FR'; -- 9,000
+explain analyze select min(name) from client_large where country = 'CY'; -- 90,000
+explain analyze select min(name) from client_large where country = 'US'; -- 400,000
+explain analyze select min(name) from client_large where country >= 'US'; -- 733,333, table scan
 
 
 -- 06 - join 2 sorted tables
@@ -93,6 +128,10 @@ where l.c2 = 1 and l.c3 = 1;
 explain analyze select count(*)
 from large_group_by_table as l
 where (l.c2 = 1 or l.c2 = 2 or l.c2 = 50) and l.c3 = 1;
+
+explain analyze select count(*)
+from large_group_by_table as l
+where l.c2 in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21) and l.c3 = 1;
 
 explain analyze select count(*)
 from large_group_by_table as l

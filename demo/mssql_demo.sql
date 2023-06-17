@@ -11,6 +11,19 @@ set statistics profile on;
 set statistics io on;
 set statistics time on;
 
+-- 00 - table scan
+select count(*) from filter_1m where status_id_tinyint = 0;
+select count(*) from filter_1m where status_id_int = 0;
+select count(*) from filter_1m where status_char = 'deleted';
+select count(*) from filter_1m where status_varchar = 'deleted';
+select count(*) from filter_1m where status_text = 'deleted';
+
+select count(*) from filter_1m where status_id_tinyint = 1;
+select count(*) from filter_1m where status_id_int = 1;
+select count(*) from filter_1m where status_char = 'active';
+select count(*) from filter_1m where status_varchar = 'active';
+select count(*) from filter_1m where status_text = 'active';
+
 
 -- 01 - lookup by primary key
 select id from client where id = 0;
@@ -45,6 +58,20 @@ select count(name) from client where country = 'FR'; -- 90
 select count(name) from client where country = 'CY'; -- 900
 select count(name) from client where country = 'US'; -- 4000
 select count(name) from client where country >= 'US'; -- 7333
+
+select min(name) from client where country = 'UK'; -- 1
+select min(name) from client where country = 'NL'; -- 9
+select min(name) from client where country = 'FR'; -- 90
+select min(name) from client where country = 'CY'; -- 900
+select min(name) from client where country = 'US'; -- 4000
+select min(name) from client where country >= 'US'; -- 7333
+
+select min(name) from client_large where country = 'UK'; -- 100, index seek + lookup
+select min(name) from client_large where country = 'NL'; -- 900
+select min(name) from client_large where country = 'FR'; -- 9,000, index scan
+select min(name) from client_large where country = 'CY'; -- 90,000
+select min(name) from client_large where country = 'US'; -- 400,000
+select min(name) from client_large where country >= 'US'; -- 733,333
 
 
 -- 06 - join 2 sorted tables
@@ -109,6 +136,20 @@ where l.c2 = 1 and l.c3 = 1
 select count(*)
 from large_group_by_table as l
 where (l.c2 = 1 or l.c2 = 2 or l.c2 = 50) and l.c3 = 1;
+
+select count(*)
+from large_group_by_table as l
+where l.c2 in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+               31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45) and l.c3 = 1;
+
+select count(*)
+from large_group_by_table as l
+where l.c2 in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+               31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46) and l.c3 = 1;
+
+select count(*)
+from large_group_by_table as l
+where l.c2 >= 0 and l.c2 < 50 and l.c3 = 1;
 
 select count(*)
 from large_group_by_table as l
