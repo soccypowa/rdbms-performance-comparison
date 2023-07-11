@@ -48,6 +48,7 @@ select min(id) + max(id) from client;
 select count(*) from client where id >= 1 and id < 10000 and id > 9990;
 select count(*) from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;
 
+
 -- declare @a int = 1, @b int = 10000, @c int = 2;
 -- select count(*) from order_detail where order_id >= @a and order_id < @b and order_id < @c;
 

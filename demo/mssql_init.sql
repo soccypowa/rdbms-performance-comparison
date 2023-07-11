@@ -368,3 +368,37 @@ create nonclustered index idx_large_group_by_table_c1_c2_c3_c4 on large_group_by
 create nonclustered index idx_large_group_by_table_c2 on large_group_by_table(c2);
 
 create nonclustered index idx_large_group_by_table_c3 on large_group_by_table(c3);
+
+-- group_by_table
+drop table if exists group_by_table;
+
+create table group_by_table
+(
+    id int not null,
+    a int not null,
+    b int not null,
+    c int not null,
+
+    primary key clustered (id)
+);
+
+with tmp as (
+    select
+        row_number() over (order by (select 1)) - 1 as id
+    from sys.all_columns as a
+    cross join sys.all_columns as b
+)
+insert into group_by_table(id, a, b, c)
+select
+    id,
+    floor(rand(checksum(newid())) * 100000) as a,
+    floor(rand(checksum(newid())) * 1000) as b,
+    floor(rand(checksum(newid())) * 10) as c
+from tmp
+where id < 1000000;
+
+create nonclustered index idx_group_by_table_a on group_by_table(a);
+
+create nonclustered index idx_group_by_table_b on group_by_table(b);
+
+create nonclustered index idx_group_by_table_c on group_by_table(c);

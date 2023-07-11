@@ -34,6 +34,7 @@ services:
       - "./mysql_init_06_filter_10m.sql:/docker-entrypoint-initdb.d/mysql_init_06_filter_10m.sql"
       - "./mysql_init_07_filter_1m.sql:/docker-entrypoint-initdb.d/mysql_init_07_filter_1m.sql"
       - "./mysql_init_08_large_group_by_table.sql:/docker-entrypoint-initdb.d/mysql_init_08_large_group_by_table.sql"
+      - "./mysql_init_09_group_by_table.sql:/docker-entrypoint-initdb.d/mysql_init_09_group_by_table.sql"
 
   mssql2022:
     image: mcr.microsoft.com/mssql/server:2022-CU4-ubuntu-20.04
@@ -46,13 +47,18 @@ services:
       MSSQL_SA_PASSWORD: 'myStrong(!)Password'
       MSSQL_PID: Developer
 
-  mssql2019:
-    image: mcr.microsoft.com/mssql/server:2019-CU20-ubuntu-20.04
-    platform: linux/amd64
-    ports:
-      - "1434:1433"
-    environment:
-      ACCEPT_EULA: Y
-      MSSQL_USER: SA
-      MSSQL_SA_PASSWORD: 'myStrong(!)Password'
-      MSSQL_PID: Developer
+#  mssql2019:
+#    image: mcr.microsoft.com/mssql/server:2019-CU20-ubuntu-20.04
+#    platform: linux/amd64
+#    ports:
+#      - "1434:1433"
+#    environment:
+#      ACCEPT_EULA: Y
+#      MSSQL_USER: SA
+#      MSSQL_SA_PASSWORD: 'myStrong(!)Password'
+#      MSSQL_PID: Developer
+#    volumes:
+#      - "./mssql_init.sql:/mssql_init.sql"
+#      - "./mssql_init.sh:/mssql_init.sh"
+#    command:
+#      - /mssql_init.sh

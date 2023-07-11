@@ -363,7 +363,7 @@ var Tests = map[string]testData{
 			},
 			MsSql22: {
 				//"optimized":       "select min(t3.min_c2)\nfrom (select distinct(c1) as c1 from large_group_by_table) as t\ncross apply (select min(t2.c2) as min_c2 from large_group_by_table as t2 where t2.c1 = t.c1) as t3;",
-				//"super-optimized": "select min(t4.min_c2)\nfrom (select min(c1) as min_c1, max(c1) as max_c1 from large_group_by_table) as t\ncross apply (select n.id from numbers as n where n.id >= t.min_c1 and n.id <= t.max_c1) as t2\ncross apply (select min(t3.c2) as min_c2 from large_group_by_table as t3 where t3.c1 = t2.id) as t4;\n",
+				"super-optimized": "select min(t4.min_c2)\nfrom (select min(c1) as min_c1, max(c1) as max_c1 from large_group_by_table) as t\ncross apply (select n.id from numbers as n where n.id >= t.min_c1 and n.id <= t.max_c1) as t2\ncross apply (select min(t3.c2) as min_c2 from large_group_by_table as t3 where t3.c1 = t2.id) as t4;\n",
 				//"super-super-optimized": "select min(t3.min_c2)\nfrom (select 0 as c1 union all select 1 union all select 2 union all select 3 union all select 4 union all select 5 union all select 6 union all select 7 union all select 8 union all select 9) as t\ncross apply (select min(t2.c2) as min_c2 from large_group_by_table as t2 where t2.c1 = t.c1) as t3;",
 				"default":     "select min(min_product_id) from (select order_id, min(product_id) as min_product_id from order_detail group by order_id) as t;",
 				"large table": "select min(min_c2) from (select c1, min(c2) as min_c2 from large_group_by_table group by c1) as t",
@@ -417,6 +417,36 @@ var Tests = map[string]testData{
 		},
 		QueryInt,
 		300,
+	},
+	"skip_scan": {
+		"group by",
+		map[string]map[string]string{
+			MySql: {
+				"a": "select count(*) from (select a from group_by_table group by a) as tmp",
+				"b": "select count(*) from (select b from group_by_table group by b) as tmp",
+				"c": "select count(*) from (select c from group_by_table group by c) as tmp",
+			},
+			PostgreSql: {
+				"a":          "select count(*) from (select a from group_by_table group by a) as tmp",
+				"b":          "set max_parallel_workers_per_gather = 1; select count(*) from (select b from group_by_table group by b) as tmp",
+				"b-parallel": "select count(*) from (select b from group_by_table group by b) as tmp",
+				"c":          "set max_parallel_workers_per_gather = 1; select count(*) from (select c from group_by_table group by c) as tmp",
+				"c-parallel": "select count(*) from (select c from group_by_table group by c) as tmp",
+				"a1":         "WITH RECURSIVE t AS (SELECT min(a) AS x FROM group_by_table UNION ALL SELECT (SELECT min(a) FROM group_by_table WHERE a > t.x) FROM t WHERE t.x IS NOT NULL) select count(*) from (SELECT x FROM t WHERE x IS NOT NULL UNION ALL SELECT null WHERE EXISTS (SELECT 1 FROM group_by_table WHERE a IS NULL)) as tmp;",
+				"b1":         "WITH RECURSIVE t AS (SELECT min(b) AS x FROM group_by_table UNION ALL SELECT (SELECT min(b) FROM group_by_table WHERE b > t.x) FROM t WHERE t.x IS NOT NULL) select count(*) from (SELECT x FROM t WHERE x IS NOT NULL UNION ALL SELECT null WHERE EXISTS (SELECT 1 FROM group_by_table WHERE b IS NULL)) as tmp;",
+				"c1":         "WITH RECURSIVE t AS (SELECT min(c) AS x FROM group_by_table UNION ALL SELECT (SELECT min(c) FROM group_by_table WHERE c > t.x) FROM t WHERE t.x IS NOT NULL) select count(*) from (SELECT x FROM t WHERE x IS NOT NULL UNION ALL SELECT null WHERE EXISTS (SELECT 1 FROM group_by_table WHERE c IS NULL)) as tmp;",
+			},
+			MsSql22: {
+				"a":  "select count(*) from (select a from group_by_table group by a) as tmp",
+				"b":  "select count(*) from (select b from group_by_table group by b) as tmp",
+				"c":  "select count(*) from (select c from group_by_table group by c) as tmp",
+				"a1": "create table #result (x int); declare @current int; select top (1) @current = a from group_by_table order by a; while @@rowcount > 0 begin insert into #result values (@current); select top (1) @current = a from group_by_table where a > @current order by a; end; select count(*) from #result;",
+				"b1": "create table #result (x int); declare @current int; select top (1) @current = b from group_by_table order by b; while @@rowcount > 0 begin insert into #result values (@current); select top (1) @current = b from group_by_table where b > @current order by b; end; select count(*) from #result;",
+				"c1": "create table #result (x int); declare @current int; select top (1) @current = c from group_by_table order by c; while @@rowcount > 0 begin insert into #result values (@current); select top (1) @current = c from group_by_table where c > @current order by c; end; select count(*) from #result;",
+			},
+		},
+		QueryInt,
+		20,
 	},
 }
 

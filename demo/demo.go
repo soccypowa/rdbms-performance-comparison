@@ -69,7 +69,7 @@ func main() {
 		{MySql, "mysql", "root:mysql@tcp(127.0.0.1:3306)/test_db"},
 		{PostgreSql, "postgres", "postgres://postgres:postgres@localhost:5432/test_db?sslmode=disable"},
 		{MsSql22, "sqlserver", "sqlserver://SA:myStrong(!)Password@localhost:1433?database=test_db"},
-		{MsSql19, "sqlserver", "sqlserver://SA:myStrong(!)Password@localhost:1434?database=test_db"},
+		//{MsSql19, "sqlserver", "sqlserver://SA:myStrong(!)Password@localhost:1434?database=test_db"},
 	}
 
 	var testCodes []string
