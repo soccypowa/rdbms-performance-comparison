@@ -418,8 +418,8 @@ var Tests = map[string]testData{
 		QueryInt,
 		300,
 	},
-	"skip_scan": {
-		"group by",
+	"10": {
+		"group by / skip scan",
 		map[string]map[string]string{
 			MySql: {
 				"a": "select count(*) from (select a from group_by_table group by a) as tmp",
