@@ -1,3 +1,70 @@
+-- 01 - skip scan
+select count(*) from (select a from group_by_table group by a) as tmp;
+select count(*) from (select b from group_by_table group by b) as tmp;
+select count(*) from (select c from group_by_table group by c) as tmp;
+
+show max_parallel_workers_per_gather;
+set max_parallel_workers_per_gather = 1;
+set max_parallel_workers_per_gather = 2;
+set max_parallel_workers_per_gather = 4;
+
+with recursive t as (
+    select min(a) as x from group_by_table
+    union all
+    select (select min(a) from group_by_table where a > t.x) from t where t.x is not null
+)
+select count(*)
+from (
+    select x from t where x is not null
+    union all
+    select null where exists (select 1 from group_by_table where a is null)
+) as tmp;
+
+with recursive t as (
+    select min(b) as x from group_by_table
+    union all
+    select (select min(b) from group_by_table where b > t.x) from t where t.x is not null
+)
+select count(*)
+from (
+    select x from t where x is not null
+    union all
+    select null where exists (select 1 from group_by_table where b is null)
+) as tmp;
+
+with recursive t as (
+    select min(c) as x from group_by_table
+    union all
+    select (select min(c) from group_by_table where c > t.x) from t where t.x is not null
+)
+select count(*)
+from (
+    select x from t where x is not null
+    union all
+    select null where exists (select 1 from group_by_table where c is null)
+) as tmp;
+
+-- 02 - merge join
+explain analyze select count(*) from client as c inner join client_ex as c_ex on c_ex.id = c.id;
+explain analyze select count(*) from "order" as o inner join order_detail as od on od.order_id = o.id;
+
+show enable_hashjoin;
+set enable_hashjoin = off;
+set enable_hashjoin = on;
+
+/*
+set max_parallel_workers_per_gather = 0;
+
+show max_parallel_workers_per_gather;
+*/
+
+explain analyze select count(*) from "order" as o inner join (select order_id from order_detail group by order_id) as od on od.order_id = o.id;
+
+explain analyze select count(*) from "order" as o inner join (select order_id, product_id from order_detail group by order_id, product_id) as od on od.order_id = o.id;
+
+explain analyze select count(*) from client as a inner join client as b on a.name < b.name;
+
+
 -- 00 - table scan
 explain analyze select count(*) from filter_1m where status_id_tinyint = 0;
 explain analyze select count(*) from filter_1m where status_id_int = 0;
