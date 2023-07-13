@@ -427,10 +427,10 @@ var Tests = map[string]testData{
 				"c": "select count(distinct c) as cnt from group_by_table",
 			},
 			PostgreSql: {
-				"a": "select count(distinct a) as cnt from group_by_table",
-				//"b":          "set max_parallel_workers_per_gather = 1; select count(distinct b) as cnt from group_by_table",
+				"a":          "select count(distinct a) as cnt from group_by_table",
+				"b":          "set max_parallel_workers_per_gather = 1; select count(distinct b) as cnt from group_by_table",
 				"b-parallel": "select count(distinct b) as cnt from group_by_table",
-				//"c":          "set max_parallel_workers_per_gather = 1; select count(distinct c) as cnt from group_by_table",
+				"c":          "set max_parallel_workers_per_gather = 1; select count(distinct c) as cnt from group_by_table",
 				"c-parallel": "select count(distinct c) as cnt from group_by_table",
 				"a1":         "with recursive t as (select min(a) as x from group_by_table union all select (select min(a) from group_by_table where a > t.x) from t where t.x is not null) select count(*) from (select x from t where x is not null union all select null where exists (select 1 from group_by_table where a is null)) as tmp;",
 				"b1":         "with recursive t as (select min(b) as x from group_by_table union all select (select min(b) from group_by_table where b > t.x) from t where t.x is not null) select count(*) from (select x from t where x is not null union all select null where exists (select 1 from group_by_table where b is null)) as tmp;",
