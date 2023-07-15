@@ -30,6 +30,28 @@ explain analyze select count(*) from order_detail where order_id >= 1 and order_
  */
 
 
+-- 03 - nonclustered index seek vs. scan
+explain analyze select min(name) from client where country = 'UK'; -- 1
+explain analyze select min(name) from client where country = 'NL'; -- 9
+explain analyze select min(name) from client where country = 'FR'; -- 90
+explain analyze select min(name) from client where country = 'CY'; -- 900
+explain analyze select min(name) from client where country = 'US'; -- 4000
+explain analyze select min(name) from client where country >= 'US'; -- 7333, table scan
+
+explain analyze select min(name) from client where country >= 'US' and country < 'UT'; -- 4000, table scan
+explain analyze select min(name) from client where country in ('US', 'UK'); -- 7334, table scan
+explain analyze select min(name) from client where country in ('US', 'XX'); -- 7333, table scan
+explain analyze select min(name) from client where country in ('UK', 'NL'); -- 10, index range scan
+
+explain analyze select min(name) from client_large where country = 'UK'; -- 100, index lookup
+explain analyze select min(name) from client_large where country = 'NL'; -- 900
+explain analyze select min(name) from client_large where country = 'FR'; -- 9,000
+explain analyze select min(name) from client_large where country = 'CY'; -- 90,000
+explain analyze select min(name) from client_large where country = 'US'; -- 400,000
+explain analyze select min(name) from client_large where country >= 'US'; -- 733,333, table scan
+
+
+
 -- 00 - table scan
 explain analyze select count(*) from filter_1m where status_id_tinyint = 0;
 explain analyze select count(*) from filter_1m where status_id_int = 0;
@@ -67,30 +89,6 @@ explain analyze select id, name from client where id = 100000;
 explain analyze select min(id) from client;
 explain analyze select max(id) from client;
 explain analyze select min(id) + max(id) from client;
-
-
-
--- 05 - nonclustered index seek vs. scan
-explain analyze select count(name) from client where country = 'UK'; -- 1
-explain analyze select count(name) from client where country = 'NL'; -- 9
-explain analyze select count(name) from client where country = 'FR'; -- 90
-explain analyze select count(name) from client where country = 'CY'; -- 900
-explain analyze select count(name) from client where country = 'US'; -- 4000
-explain analyze select count(name) from client where country >= 'US'; -- 7333, seq scan
-
-explain analyze select min(name) from client where country = 'UK'; -- 1
-explain analyze select min(name) from client where country = 'NL'; -- 9
-explain analyze select min(name) from client where country = 'FR'; -- 90
-explain analyze select min(name) from client where country = 'CY'; -- 900
-explain analyze select min(name) from client where country = 'US'; -- 4000
-explain analyze select min(name) from client where country >= 'US'; -- 7333, seq scan
-
-explain analyze select min(name) from client_large where country = 'UK'; -- 100, index lookup
-explain analyze select min(name) from client_large where country = 'NL'; -- 900
-explain analyze select min(name) from client_large where country = 'FR'; -- 9,000
-explain analyze select min(name) from client_large where country = 'CY'; -- 90,000
-explain analyze select min(name) from client_large where country = 'US'; -- 400,000
-explain analyze select min(name) from client_large where country >= 'US'; -- 733,333, table scan
 
 
 -- 06 - join 2 sorted tables

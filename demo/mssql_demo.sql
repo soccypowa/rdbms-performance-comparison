@@ -94,6 +94,26 @@ select count(*) from order_detail where order_id >= 1 and order_id < 2 and order
 -- select count(*) from order_detail where order_id >= @a and order_id < @b and order_id < @c;
 
 
+-- 03 - nonclustered index seek vs. scan
+select count(*) from client;
+
+select min(name) from client where country = 'UK'; -- 1, index seek + lookup
+select min(name) from client where country = 'NL'; -- 9
+select min(name) from client where country = 'FR'; -- 90, index scan
+select min(name) from client where country = 'CY'; -- 900
+select min(name) from client where country = 'US'; -- 4000
+select min(name) from client where country >= 'US'; -- 7333
+
+select count(*) from client_large;
+
+select min(name) from client_large where country = 'UK'; -- 100, index seek + lookup
+select min(name) from client_large where country = 'NL'; -- 900
+select min(name) from client_large where country = 'FR'; -- 9,000, index scan
+select min(name) from client_large where country = 'CY'; -- 90,000
+select min(name) from client_large where country = 'US'; -- 400,000
+select min(name) from client_large where country >= 'US'; -- 733,333
+
+
 
 -- 00 - table scan
 select count(*) from filter_1m where status_id_tinyint = 0;
@@ -126,29 +146,6 @@ select id, name from client where id = 100000;
 select min(id) from client;
 select max(id) from client;
 select min(id) + max(id) from client;
-
--- 05 - nonclustered index seek vs. scan
-select count(name) from client where country = 'UK'; -- 1
-select count(name) from client where country = 'NL'; -- 9
-select count(name) from client where country = 'FR'; -- 90
-select count(name) from client where country = 'CY'; -- 900
-select count(name) from client where country = 'US'; -- 4000
-select count(name) from client where country >= 'US'; -- 7333
-
-select min(name) from client where country = 'UK'; -- 1
-select min(name) from client where country = 'NL'; -- 9
-select min(name) from client where country = 'FR'; -- 90
-select min(name) from client where country = 'CY'; -- 900
-select min(name) from client where country = 'US'; -- 4000
-select min(name) from client where country >= 'US'; -- 7333
-
-select min(name) from client_large where country = 'UK'; -- 100, index seek + lookup
-select min(name) from client_large where country = 'NL'; -- 900
-select min(name) from client_large where country = 'FR'; -- 9,000, index scan
-select min(name) from client_large where country = 'CY'; -- 90,000
-select min(name) from client_large where country = 'US'; -- 400,000
-select min(name) from client_large where country >= 'US'; -- 733,333
-
 
 -- 06 - join 2 sorted tables
 select count(*) from client as c inner join client_ex as c_ex on c_ex.id = c.id;

@@ -82,6 +82,28 @@ explain analyze select count(*) from "order" as o inner join (select order_id, p
 explain analyze select count(*) from client as a inner join client as b on a.name < b.name;
 
 
+-- 03 - nonclustered index seek vs. scan
+explain analyze select min(name) from client where country = 'UK'; -- 1, index scan
+explain analyze select min(name) from client where country = 'NL'; -- 9, bitmap index scan
+explain analyze select min(name) from client where country = 'FR'; -- 90
+explain analyze select min(name) from client where country = 'CY'; -- 900
+explain analyze select min(name) from client where country = 'US'; -- 4000
+explain analyze select min(name) from client where country >= 'US' and country < 'UT'; -- 4000
+explain analyze select min(name) from client where country >= 'US'; -- 7333, seq scan
+
+explain analyze select min(name) from client where country >= 'US' and country < 'UT'; -- 4000, bitmap index scan
+explain analyze select min(name) from client where country in ('US', 'UK'); -- 7334, bitmap index scan
+explain analyze select min(name) from client where country in ('US', 'XX'); -- 7333, seq scan
+explain analyze select min(name) from client where country in ('UK', 'NL'); -- 10, bitmap index scan
+
+explain analyze select min(name) from client_large where country = 'UK'; -- 100, index scan
+explain analyze select min(name) from client_large where country = 'NL'; -- 900, bitmap index scan
+explain analyze select min(name) from client_large where country = 'FR'; -- 9,000
+explain analyze select min(name) from client_large where country = 'CY'; -- 90,000
+explain analyze select min(name) from client_large where country = 'US'; -- 400,000, parallel seq scan
+explain analyze select min(name) from client_large where country >= 'US'; -- 733,333
+
+
 -- 00 - table scan
 explain analyze select count(*) from filter_1m where status_id_tinyint = 0;
 explain analyze select count(*) from filter_1m where status_id_int = 0;
@@ -114,30 +136,6 @@ explain analyze select id, name from client where id = 100000;
 explain analyze select min(id) from client;
 explain analyze select max(id) from client;
 explain analyze select min(id) + max(id) from client;
-
--- 05 - nonclustered index seek vs. scan
-explain analyze select count(name) from client where country = 'UK'; -- 1, index scan
-explain analyze select count(name) from client where country = 'NL'; -- 9, bitmap index scan
-explain analyze select count(name) from client where country = 'FR'; -- 90
-explain analyze select count(name) from client where country = 'CY'; -- 900
-explain analyze select count(name) from client where country = 'US'; -- 4000
-explain analyze select count(name) from client where country >= 'US'; -- 7333, seq scan
-
-explain analyze select min(name) from client where country = 'UK'; -- 1, index scan
-explain analyze select min(name) from client where country = 'NL'; -- 9, bitmap index scan
-explain analyze select min(name) from client where country = 'FR'; -- 90
-explain analyze select min(name) from client where country = 'CY'; -- 900
-explain analyze select min(name) from client where country = 'US'; -- 4000
-explain analyze select min(name) from client where country >= 'US'; -- 7333, seq scan
-
-explain analyze select min(name) from client_large where country = 'UK'; -- 100, index scan
-explain analyze select min(name) from client_large where country = 'NL'; -- 900, bitmap index scan
-explain analyze select min(name) from client_large where country = 'FR'; -- 9,000
-explain analyze select min(name) from client_large where country = 'CY'; -- 90,000
-explain analyze select min(name) from client_large where country = 'US'; -- 400,000, parallel seq scan
-explain analyze select min(name) from client_large where country >= 'US'; -- 733,333
-
-
 
 -- 06 - join 2 sorted tables
 explain analyze select count(*) from client as c inner join client_ex as c_ex on c_ex.id = c.id;
