@@ -1,3 +1,13 @@
+-- 01 - select distinct / count distinct
+explain analyze select count(distinct a) as cnt from group_by_table;
+explain analyze select count(distinct b) as cnt from group_by_table;
+explain analyze select count(distinct c) as cnt from group_by_table;
+
+explain analyze select count(*) as cnt from (select a from group_by_table group by a) as tmp;
+explain analyze select count(*) as cnt from (select b from group_by_table group by b) as tmp;
+explain analyze select count(*) as cnt from (select c from group_by_table group by c) as tmp;
+
+
 -- 00 - table scan
 explain analyze select count(*) from filter_1m where status_id_tinyint = 0;
 explain analyze select count(*) from filter_1m where status_id_int = 0;

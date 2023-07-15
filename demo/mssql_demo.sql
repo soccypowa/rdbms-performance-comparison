@@ -11,6 +11,79 @@ set statistics profile on;
 set statistics io on;
 set statistics time on;
 
+-- 01 - select distinct / count distinct
+select count(distinct a) as cnt from group_by_table;
+select count(distinct b) as cnt from group_by_table;
+select count(distinct c) as cnt from group_by_table;
+
+select count(*) as cnt from (select a from group_by_table group by a) as tmp;
+select count(*) as cnt from (select b from group_by_table group by b) as tmp;
+select count(*) as cnt from (select c from group_by_table group by c) as tmp;
+
+if object_id('tempdb..#result', 'U') is not null drop table #result;
+create table #result (x int);
+declare @current int;
+select top (1) @current = a from group_by_table order by a;
+while @@rowcount > 0
+begin
+    insert into #result values (@current);
+    select top (1) @current = a from group_by_table where a > @current order by a;
+end;
+select count(*) from #result;
+
+if object_id('tempdb..#result', 'U') is not null drop table #result;
+create table #result (x int);
+declare @current int;
+select top (1) @current = b from group_by_table order by b;
+while @@rowcount > 0
+    begin
+        insert into #result values (@current);
+        select top (1) @current = b from group_by_table where b > @current order by b;
+    end;
+select count(*) from #result;
+
+if object_id('tempdb..#result', 'U') is not null drop table #result;
+create table #result (x int);
+declare @current int;
+select top (1) @current = c from group_by_table order by c;
+while @@rowcount > 0
+    begin
+        insert into #result values (@current);
+        select top (1) @current = c from group_by_table where c > @current order by c;
+    end;
+select count(*) from #result;
+
+select count(*), min(id), max(id) from numbers;
+select count(*), min(b), max(b) from group_by_table;
+
+with min_max as (
+    select min(b) as min_b, max(b) as max_b from group_by_table
+),
+possible_values as (
+    select n.id
+    from numbers as n
+    inner join min_max as mm on n.id >= mm.min_b and n.id <= mm.max_b
+),
+result as (
+    select pv.id
+    from possible_values as pv
+    where exists (select top (1) 1 from group_by_table as g where g.b = pv.id)
+)
+select count(*)
+from result;
+
+
+create table #result (x int);
+declare @current int;
+select top (1) @current = b from group_by_table order by b;
+while @@rowcount > 0
+    begin
+        insert into #result values (@current);
+        select top (1) @current = b from group_by_table where b > @current order by b;
+    end;
+select count(*) from #result;
+
+
 -- 00 - table scan
 select count(*) from filter_1m where status_id_tinyint = 0;
 select count(*) from filter_1m where status_id_int = 0;

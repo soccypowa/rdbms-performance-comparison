@@ -21,6 +21,65 @@ type testData struct {
 
 var Tests = map[string]testData{
 	"01": {
+		"select distinct / count distinct",
+		map[string]map[string]string{
+			MySql: {
+				"a": "select count(distinct a) as cnt from group_by_table",
+				"b": "select count(distinct b) as cnt from group_by_table",
+				"c": "select count(distinct c) as cnt from group_by_table",
+			},
+			PostgreSql: {
+				"a":          "select count(distinct a) as cnt from group_by_table",
+				"b":          "set max_parallel_workers_per_gather = 1; select count(distinct b) as cnt from group_by_table",
+				"b-parallel": "select count(distinct b) as cnt from group_by_table",
+				"c":          "set max_parallel_workers_per_gather = 1; select count(distinct c) as cnt from group_by_table",
+				"c-parallel": "select count(distinct c) as cnt from group_by_table",
+				"a1":         "with recursive t as (select min(a) as x from group_by_table union all select (select min(a) from group_by_table where a > t.x) from t where t.x is not null) select count(*) from (select x from t where x is not null union all select null where exists (select 1 from group_by_table where a is null)) as tmp;",
+				"b1":         "with recursive t as (select min(b) as x from group_by_table union all select (select min(b) from group_by_table where b > t.x) from t where t.x is not null) select count(*) from (select x from t where x is not null union all select null where exists (select 1 from group_by_table where b is null)) as tmp;",
+				"c1":         "with recursive t as (select min(c) as x from group_by_table union all select (select min(c) from group_by_table where c > t.x) from t where t.x is not null) select count(*) from (select x from t where x is not null union all select null where exists (select 1 from group_by_table where c is null)) as tmp;",
+			},
+			MsSql22: {
+				"a":  "select count(distinct a) as cnt from group_by_table",
+				"b":  "select count(distinct b) as cnt from group_by_table",
+				"c":  "select count(distinct c) as cnt from group_by_table",
+				"a1": "create table #result (x int); declare @current int; select top (1) @current = a from group_by_table order by a; while @@rowcount > 0 begin insert into #result values (@current); select top (1) @current = a from group_by_table where a > @current order by a; end; select count(*) from #result;",
+				"b1": "create table #result (x int); declare @current int; select top (1) @current = b from group_by_table order by b; while @@rowcount > 0 begin insert into #result values (@current); select top (1) @current = b from group_by_table where b > @current order by b; end; select count(*) from #result;",
+				"c1": "create table #result (x int); declare @current int; select top (1) @current = c from group_by_table order by c; while @@rowcount > 0 begin insert into #result values (@current); select top (1) @current = c from group_by_table where c > @current order by c; end; select count(*) from #result;",
+				"a2": "with min_max as (select min(a) as min_a, max(a) as max_a from group_by_table), possible_values as (select n.id from numbers as n inner join min_max as mm on n.id >= mm.min_a and n.id <= mm.max_a), result as (select pv.id from possible_values as pv where exists (select top (1) 1 from group_by_table as g where g.a = pv.id)) select count(*) from result;",
+				"b2": "with min_max as (select min(b) as min_b, max(b) as max_b from group_by_table), possible_values as (select n.id from numbers as n inner join min_max as mm on n.id >= mm.min_b and n.id <= mm.max_b), result as (select pv.id from possible_values as pv where exists (select top (1) 1 from group_by_table as g where g.b = pv.id)) select count(*) from result;",
+				"c2": "with min_max as (select min(c) as min_c, max(c) as max_c from group_by_table), possible_values as (select n.id from numbers as n inner join min_max as mm on n.id >= mm.min_c and n.id <= mm.max_c), result as (select pv.id from possible_values as pv where exists (select top (1) 1 from group_by_table as g where g.c = pv.id)) select count(*) from result;",
+			},
+		},
+		QueryInt,
+		20,
+	},
+	"02": {
+		"index seek with complex condition",
+		map[string]map[string]string{
+			MySql: {
+				"default":                 "select count(*) from client where id >= 1 and id < 10000 and id < 2;",
+				"bigger range":            "select count(*) from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;",
+				"much bigger range":       "select count(*) from order_detail where order_id >= 1 and order_id < 100000 and order_id < 2;",
+				"changed predicate order": "select count(*) from order_detail where order_id >= 1 and order_id < 2 and order_id < 100000;",
+			},
+			PostgreSql: {
+				"default":                 "select count(*) from client where id >= 1 and id < 10000 and id < 2;",
+				"bigger range":            "select count(*) from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;",
+				"much bigger range":       "select count(*) from order_detail where order_id >= 1 and order_id < 100000 and order_id < 2;",
+				"changed predicate order": "select count(*) from order_detail where order_id >= 1 and order_id < 2 and order_id < 100000;",
+			},
+			MsSql22: {
+				"default":                 "select count(*) from client where id >= 1 and id < 10000 and id < 2;",
+				"bigger range":            "select count(*) from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;",
+				"much bigger range":       "select count(*) from order_detail where order_id >= 1 and order_id < 100000 and order_id < 2;",
+				"changed predicate order": "select count(*) from order_detail where order_id >= 1 and order_id < 2 and order_id < 100000;",
+			},
+		},
+		QueryInt,
+		200,
+	},
+
+	"03": {
 		"nonclustered index seek vs. scan",
 		map[string]map[string]string{
 			MySql: {
@@ -65,68 +124,6 @@ var Tests = map[string]testData{
 		QueryString,
 		200,
 	},
-	"02": {
-		"index seek with complex condition",
-		map[string]map[string]string{
-			MySql: {
-				"default":                 "select count(*) from client where id >= 1 and id < 10000 and id < 2;",
-				"bigger range":            "select count(*) from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;",
-				"much bigger range":       "select count(*) from order_detail where order_id >= 1 and order_id < 100000 and order_id < 2;",
-				"changed predicate order": "select count(*) from order_detail where order_id >= 1 and order_id < 2 and order_id < 100000;",
-			},
-			PostgreSql: {
-				"default":                 "select count(*) from client where id >= 1 and id < 10000 and id < 2;",
-				"bigger range":            "select count(*) from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;",
-				"much bigger range":       "select count(*) from order_detail where order_id >= 1 and order_id < 100000 and order_id < 2;",
-				"changed predicate order": "select count(*) from order_detail where order_id >= 1 and order_id < 2 and order_id < 100000;",
-			},
-			//MsSql19: {
-			//	"":                  "select count(*) from client where id >= 1 and id < 10000 and id < 2;",
-			//	"bigger range":      "select count(*) from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;",
-			//	"much bigger range": "select count(*) from order_detail where order_id >= 1 and order_id < 100000 and order_id < 2;",
-			//	"fixed":             "select count(*) from order_detail where order_id >= 1 and order_id < 2 and order_id < 100000;",
-			//},
-			MsSql22: {
-				"default":                 "select count(*) from client where id >= 1 and id < 10000 and id < 2;",
-				"bigger range":            "select count(*) from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;",
-				"much bigger range":       "select count(*) from order_detail where order_id >= 1 and order_id < 100000 and order_id < 2;",
-				"changed predicate order": "select count(*) from order_detail where order_id >= 1 and order_id < 2 and order_id < 100000;",
-			},
-		},
-		QueryInt,
-		200,
-	},
-	"03": {
-		"count distinct",
-		map[string]map[string]string{
-			MySql: {
-				"a": "select count(distinct a) as cnt from group_by_table",
-				"b": "select count(distinct b) as cnt from group_by_table",
-				"c": "select count(distinct c) as cnt from group_by_table",
-			},
-			PostgreSql: {
-				"a":          "select count(distinct a) as cnt from group_by_table",
-				"b":          "set max_parallel_workers_per_gather = 1; select count(distinct b) as cnt from group_by_table",
-				"b-parallel": "select count(distinct b) as cnt from group_by_table",
-				"c":          "set max_parallel_workers_per_gather = 1; select count(distinct c) as cnt from group_by_table",
-				"c-parallel": "select count(distinct c) as cnt from group_by_table",
-				"a1":         "with recursive t as (select min(a) as x from group_by_table union all select (select min(a) from group_by_table where a > t.x) from t where t.x is not null) select count(*) from (select x from t where x is not null union all select null where exists (select 1 from group_by_table where a is null)) as tmp;",
-				"b1":         "with recursive t as (select min(b) as x from group_by_table union all select (select min(b) from group_by_table where b > t.x) from t where t.x is not null) select count(*) from (select x from t where x is not null union all select null where exists (select 1 from group_by_table where b is null)) as tmp;",
-				"c1":         "with recursive t as (select min(c) as x from group_by_table union all select (select min(c) from group_by_table where c > t.x) from t where t.x is not null) select count(*) from (select x from t where x is not null union all select null where exists (select 1 from group_by_table where c is null)) as tmp;",
-			},
-			MsSql22: {
-				"a":  "select count(distinct a) as cnt from group_by_table",
-				"b":  "select count(distinct b) as cnt from group_by_table",
-				"c":  "select count(distinct c) as cnt from group_by_table",
-				"a1": "create table #result (x int); declare @current int; select top (1) @current = a from group_by_table order by a; while @@rowcount > 0 begin insert into #result values (@current); select top (1) @current = a from group_by_table where a > @current order by a; end; select count(*) from #result;",
-				"b1": "create table #result (x int); declare @current int; select top (1) @current = b from group_by_table order by b; while @@rowcount > 0 begin insert into #result values (@current); select top (1) @current = b from group_by_table where b > @current order by b; end; select count(*) from #result;",
-				"c1": "create table #result (x int); declare @current int; select top (1) @current = c from group_by_table order by c; while @@rowcount > 0 begin insert into #result values (@current); select top (1) @current = c from group_by_table where c > @current order by c; end; select count(*) from #result;",
-			},
-		},
-		QueryInt,
-		20,
-	},
-
 	"03-min": {
 		"nonclustered index seek vs. scan",
 		map[string]map[string]string{
