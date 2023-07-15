@@ -247,161 +247,161 @@ var Tests = map[string]testData{
 		300,
 	},
 
-	"needs-refactoring-00-1": {
-		"filter about 90% of 10 million rows table",
-		map[string]map[string]string{
-			MySql: {
-				//"tinyint": "select count(*) from filter_1m where status_id_tinyint = 1;",
-				"int":           "select count(*) from filter_1m where status_id_int = 1;",
-				"int w/o where": "select count(*) from filter_1m",
-				"char":          "select count(*) from filter_1m where status_char = 'active';",
-				"varchar":       "select count(*) from filter_1m where status_varchar = 'active';",
-				"text":          "select count(*) from filter_1m where status_text = 'active';",
-			},
-			PostgreSql: {
-				//"tinyint": "select count(*) from filter_1m where status_id_tinyint = 1;",
-				"int":     "select count(*) from filter_1m where status_id_int = 1;",
-				"char":    "select count(*) from filter_1m where status_char = 'active';",
-				"varchar": "select count(*) from filter_1m where status_varchar = 'active';",
-				"text":    "select count(*) from filter_1m where status_text = 'active';",
-			},
-			//MsSql19: {
-			//	//"tinyint": "select count(*) from filter_1m where status_id_tinyint = 1;",
-			//	"int":     "select count(*) from filter_1m where status_id_int = 1;",
-			//	"char":    "select count(*) from filter_1m where status_char = 'active';",
-			//	"varchar": "select count(*) from filter_1m where status_varchar = 'active';",
-			//	"text":    "select count(*) from filter_1m where status_text = 'active';",
-			//},
-			MsSql22: {
-				//"tinyint": "select count(*) from filter_1m where status_id_tinyint = 1;",
-				"int":     "select count(*) from filter_1m where status_id_int = 1;",
-				"char":    "select count(*) from filter_1m where status_char = 'active';",
-				"varchar": "select count(*) from filter_1m where status_varchar = 'active';",
-				"text":    "select count(*) from filter_1m where status_text = 'active';",
-			},
-		},
-		QueryInt,
-		10,
-	},
-	"needs-refactoring-00-2": {
-		"filter 10 million rows table",
-		map[string]map[string]string{
-			MySql: {
-				"10%": "select count(*) from filter_1m where status_id_int = 0;",
-				"90%": "select count(*) from filter_1m where status_id_int = 1;",
-			},
-			PostgreSql: {
-				"10%": "select count(*) from filter_1m where status_id_int = 0;",
-				"90%": "select count(*) from filter_1m where status_id_int = 1;",
-			},
-			MsSql22: {
-				"10%": "select count(*) from filter_1m where status_id_int = 0;",
-				"90%": "select count(*) from filter_1m where status_id_int = 1;",
-			},
-		},
-		QueryInt,
-		10,
-	},
-	"needs-refactoring-00-3": {
-		"count rows in parallel",
-		map[string]map[string]string{
-			MySql: {
-				"w/o pk":  "select count(*) from filter_1m;",
-				"pk":      "select count(*) from filter_1m_with_pk;",
-				"pk - id": "select count(id) from filter_1m_with_pk;",
-			},
-			PostgreSql: {
-				"w/o pk":    "select count(*) from filter_1m;",
-				"pk":        "select count(*) from filter_1m_with_pk;",
-				"pk - id":   "select count(id) from filter_1m_with_pk;",
-				"4 threads": "set max_parallel_workers_per_gather = 4; select count(*) from filter_1m;",
-			},
-			MsSql22: {
-				"w/o pk":  "select count(*) from filter_1m;",
-				"pk":      "select count(*) from filter_1m_with_pk;",
-				"pk - id": "select count(id) from filter_1m_with_pk;",
-			},
-		},
-		QueryInt,
-		10,
-	},
-	"needs-refactoring-01": {
-		"lookup by primary key",
-		map[string]map[string]string{
-			MySql: {
-				"first key": "select id from client as c where id = 0;",
-				//"middle key":                        "select id from client as c where id = 5000;",
-				"last key": "select id from client as c where id = 9999;",
-				//"not existing key at the beginning": "select id from client as c where id = 100000;",
-				//"not existing key at the end":       "select id from client as c where id = 100000;",
-				"lookup_and_agg": "select count(*) from order_detail as od where order_id = 1;",
-			},
-			PostgreSql: {
-				"first key": "select id from client as c where id = 0;",
-				//"middle key":                        "select id from client as c where id = 5000;",
-				"last key": "select id from client as c where id = 9999;",
-				//"not existing key at the beginning": "select id from client as c where id = 100000;",
-				//"not existing key at the end":       "select id from client as c where id = 100000;",
-				"lookup_and_agg": "select count(*) from order_detail as od where order_id = 1;",
-			},
-			MsSql22: {
-				"first key": "select id from client as c where id = 0;",
-				//"middle key":                        "select id from client as c where id = 5000;",
-				"last key": "select id from client as c where id = 9999;",
-				//"not existing key at the beginning": "select id from client as c where id = 100000;",
-				//"not existing key at the end":       "select id from client as c where id = 100000;",
-				"lookup_and_agg": "select count(*) from order_detail as od where order_id = 1;",
-			},
-		},
-		QueryInt,
-		3000,
-	},
-	"needs-refactoring-02": {
-		"lookup by primary key + column not in index",
-		map[string]map[string]string{
-			MySql: {
-				"": "select id, name from client as c where id = 1;",
-			},
-			PostgreSql: {
-				"": "select id, name from client as c where id = 1;",
-			},
-			MsSql19: {
-				"": "select id, name from client as c where id = 1;",
-			},
-			MsSql22: {
-				"": "select id, name from client as c where id = 1;",
-			},
-		},
-		QueryIntAndString,
-		3000,
-	},
-	"needs-refactoring-03": {
-		"min and max",
-		map[string]map[string]string{
-			MySql: {
-				"min":     "select min(id) from client as c;",
-				"max":     "select min(id) from client as c;",
-				"min-max": "select min(id) + max(id) from client as c;",
-			},
-			PostgreSql: {
-				"min":     "select min(id) from client as c;",
-				"max":     "select min(id) from client as c;",
-				"min-max": "select min(id) + max(id) from client as c;",
-			},
-			//MsSql19: {
-			//	"min":     "select min(id) from client as c;",
-			//	"max":     "select min(id) from client as c;",
-			//	"min-max": "select min(id) + max(id) from client as c;",
-			//},
-			MsSql22: {
-				"min":     "select min(id) from client as c;",
-				"max":     "select min(id) from client as c;",
-				"min-max": "select min(id) + max(id) from client as c;",
-			},
-		},
-		QueryInt,
-		3000,
-	},
+	//"needs-refactoring-00-1": {
+	//	"filter about 90% of 10 million rows table",
+	//	map[string]map[string]string{
+	//		MySql: {
+	//			//"tinyint": "select count(*) from filter_1m where status_id_tinyint = 1;",
+	//			"int":           "select count(*) from filter_1m where status_id_int = 1;",
+	//			"int w/o where": "select count(*) from filter_1m",
+	//			"char":          "select count(*) from filter_1m where status_char = 'active';",
+	//			"varchar":       "select count(*) from filter_1m where status_varchar = 'active';",
+	//			"text":          "select count(*) from filter_1m where status_text = 'active';",
+	//		},
+	//		PostgreSql: {
+	//			//"tinyint": "select count(*) from filter_1m where status_id_tinyint = 1;",
+	//			"int":     "select count(*) from filter_1m where status_id_int = 1;",
+	//			"char":    "select count(*) from filter_1m where status_char = 'active';",
+	//			"varchar": "select count(*) from filter_1m where status_varchar = 'active';",
+	//			"text":    "select count(*) from filter_1m where status_text = 'active';",
+	//		},
+	//		//MsSql19: {
+	//		//	//"tinyint": "select count(*) from filter_1m where status_id_tinyint = 1;",
+	//		//	"int":     "select count(*) from filter_1m where status_id_int = 1;",
+	//		//	"char":    "select count(*) from filter_1m where status_char = 'active';",
+	//		//	"varchar": "select count(*) from filter_1m where status_varchar = 'active';",
+	//		//	"text":    "select count(*) from filter_1m where status_text = 'active';",
+	//		//},
+	//		MsSql22: {
+	//			//"tinyint": "select count(*) from filter_1m where status_id_tinyint = 1;",
+	//			"int":     "select count(*) from filter_1m where status_id_int = 1;",
+	//			"char":    "select count(*) from filter_1m where status_char = 'active';",
+	//			"varchar": "select count(*) from filter_1m where status_varchar = 'active';",
+	//			"text":    "select count(*) from filter_1m where status_text = 'active';",
+	//		},
+	//	},
+	//	QueryInt,
+	//	10,
+	//},
+	//"needs-refactoring-00-2": {
+	//	"filter 10 million rows table",
+	//	map[string]map[string]string{
+	//		MySql: {
+	//			"10%": "select count(*) from filter_1m where status_id_int = 0;",
+	//			"90%": "select count(*) from filter_1m where status_id_int = 1;",
+	//		},
+	//		PostgreSql: {
+	//			"10%": "select count(*) from filter_1m where status_id_int = 0;",
+	//			"90%": "select count(*) from filter_1m where status_id_int = 1;",
+	//		},
+	//		MsSql22: {
+	//			"10%": "select count(*) from filter_1m where status_id_int = 0;",
+	//			"90%": "select count(*) from filter_1m where status_id_int = 1;",
+	//		},
+	//	},
+	//	QueryInt,
+	//	10,
+	//},
+	//"needs-refactoring-00-3": {
+	//	"count rows in parallel",
+	//	map[string]map[string]string{
+	//		MySql: {
+	//			"w/o pk":  "select count(*) from filter_1m;",
+	//			"pk":      "select count(*) from filter_1m_with_pk;",
+	//			"pk - id": "select count(id) from filter_1m_with_pk;",
+	//		},
+	//		PostgreSql: {
+	//			"w/o pk":    "select count(*) from filter_1m;",
+	//			"pk":        "select count(*) from filter_1m_with_pk;",
+	//			"pk - id":   "select count(id) from filter_1m_with_pk;",
+	//			"4 threads": "set max_parallel_workers_per_gather = 4; select count(*) from filter_1m;",
+	//		},
+	//		MsSql22: {
+	//			"w/o pk":  "select count(*) from filter_1m;",
+	//			"pk":      "select count(*) from filter_1m_with_pk;",
+	//			"pk - id": "select count(id) from filter_1m_with_pk;",
+	//		},
+	//	},
+	//	QueryInt,
+	//	10,
+	//},
+	//"needs-refactoring-01": {
+	//	"lookup by primary key",
+	//	map[string]map[string]string{
+	//		MySql: {
+	//			"first key": "select id from client as c where id = 0;",
+	//			//"middle key":                        "select id from client as c where id = 5000;",
+	//			"last key": "select id from client as c where id = 9999;",
+	//			//"not existing key at the beginning": "select id from client as c where id = 100000;",
+	//			//"not existing key at the end":       "select id from client as c where id = 100000;",
+	//			"lookup_and_agg": "select count(*) from order_detail as od where order_id = 1;",
+	//		},
+	//		PostgreSql: {
+	//			"first key": "select id from client as c where id = 0;",
+	//			//"middle key":                        "select id from client as c where id = 5000;",
+	//			"last key": "select id from client as c where id = 9999;",
+	//			//"not existing key at the beginning": "select id from client as c where id = 100000;",
+	//			//"not existing key at the end":       "select id from client as c where id = 100000;",
+	//			"lookup_and_agg": "select count(*) from order_detail as od where order_id = 1;",
+	//		},
+	//		MsSql22: {
+	//			"first key": "select id from client as c where id = 0;",
+	//			//"middle key":                        "select id from client as c where id = 5000;",
+	//			"last key": "select id from client as c where id = 9999;",
+	//			//"not existing key at the beginning": "select id from client as c where id = 100000;",
+	//			//"not existing key at the end":       "select id from client as c where id = 100000;",
+	//			"lookup_and_agg": "select count(*) from order_detail as od where order_id = 1;",
+	//		},
+	//	},
+	//	QueryInt,
+	//	3000,
+	//},
+	//"needs-refactoring-02": {
+	//	"lookup by primary key + column not in index",
+	//	map[string]map[string]string{
+	//		MySql: {
+	//			"": "select id, name from client as c where id = 1;",
+	//		},
+	//		PostgreSql: {
+	//			"": "select id, name from client as c where id = 1;",
+	//		},
+	//		MsSql19: {
+	//			"": "select id, name from client as c where id = 1;",
+	//		},
+	//		MsSql22: {
+	//			"": "select id, name from client as c where id = 1;",
+	//		},
+	//	},
+	//	QueryIntAndString,
+	//	3000,
+	//},
+	//"needs-refactoring-03": {
+	//	"min and max",
+	//	map[string]map[string]string{
+	//		MySql: {
+	//			"min":     "select min(id) from client as c;",
+	//			"max":     "select min(id) from client as c;",
+	//			"min-max": "select min(id) + max(id) from client as c;",
+	//		},
+	//		PostgreSql: {
+	//			"min":     "select min(id) from client as c;",
+	//			"max":     "select min(id) from client as c;",
+	//			"min-max": "select min(id) + max(id) from client as c;",
+	//		},
+	//		//MsSql19: {
+	//		//	"min":     "select min(id) from client as c;",
+	//		//	"max":     "select min(id) from client as c;",
+	//		//	"min-max": "select min(id) + max(id) from client as c;",
+	//		//},
+	//		MsSql22: {
+	//			"min":     "select min(id) from client as c;",
+	//			"max":     "select min(id) from client as c;",
+	//			"min-max": "select min(id) + max(id) from client as c;",
+	//		},
+	//	},
+	//	QueryInt,
+	//	3000,
+	//},
 }
 
 func QueryInt(ctx context.Context, db *sql.DB, query string) {
