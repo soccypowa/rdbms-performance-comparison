@@ -147,52 +147,6 @@ var Tests = map[string]testData{
 		20,
 	},
 
-	//"03-count": {
-	//	"nonclustered index seek vs. scan",
-	//	map[string]map[string]string{
-	//		MySql: {
-	//			"1 row":     "select count(name) from client where country = 'UK';",
-	//			"9 rows":    "select count(name) from client where country = 'NL';",
-	//			"90 rows":   "select count(name) from client where country = 'FR';",
-	//			"900 rows":  "select count(name) from client where country = 'CY';",
-	//			"4000 rows": "select count(name) from client where country = 'US';",
-	//			"7333 rows": "select count(name) from client where country >= 'US';",
-	//		},
-	//		PostgreSql: {
-	//			"1 row":     "select count(name) from client where country = 'UK';",
-	//			"9 rows":    "select count(name) from client where country = 'NL';",
-	//			"90 rows":   "select count(name) from client where country = 'FR';",
-	//			"900 rows":  "select count(name) from client where country = 'CY';",
-	//			"4000 rows": "select count(name) from client where country = 'US';",
-	//			"7333 rows": "select count(name) from client where country >= 'US';",
-	//		},
-	//		//MsSql19: {
-	//		//	"1 row":     "select count(name) from client where country = 'UK';",
-	//		//	"9 rows":    "select count(name) from client where country = 'NL';",
-	//		//	"90 rows":   "select count(name) from client where country = 'FR';",
-	//		//	"900 rows":  "select count(name) from client where country = 'CY';",
-	//		//	"4000 rows": "select count(name) from client where country = 'US';",
-	//		//	"7333 rows": "select count(name) from client where country >= 'US';",
-	//		//	//"forceseek - 90 rows":    "select min(name) from client with (forceseek) where country = 'FR';",
-	//		//	//"forceseek - 900 rows": "select min(name) from client with (forceseek) where country = 'CY';",
-	//		//	//"forceseek - 4000 rows": "select min(name) from client with (forceseek) where country = 'US';",
-	//		//},
-	//		MsSql22: {
-	//			"1 row":     "select count(name) from client where country = 'UK';",
-	//			"9 rows":    "select count(name) from client where country = 'NL';",
-	//			"90 rows":   "select count(name) from client where country = 'FR';",
-	//			"900 rows":  "select count(name) from client where country = 'CY';",
-	//			"4000 rows": "select count(name) from client where country = 'US';",
-	//			"7333 rows": "select count(name) from client where country >= 'US';",
-	//			//"forceseek - 90 rows":    "select min(name) from client with (forceseek) where country = 'FR';",
-	//			//"forceseek - 900 rows": "select min(name) from client with (forceseek) where country = 'CY';",
-	//			//"forceseek - 4000 rows": "select min(name) from client with (forceseek) where country = 'US';",
-	//		},
-	//	},
-	//	QueryString,
-	//	200,
-	//},
-
 	"06": {
 		"join 2 sorted tables",
 		map[string]map[string]string{
