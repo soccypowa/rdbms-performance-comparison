@@ -20,193 +20,7 @@ type testData struct {
 }
 
 var Tests = map[string]testData{
-	"00-1": {
-		"filter about 90% of 10 million rows table",
-		map[string]map[string]string{
-			MySql: {
-				//"tinyint": "select count(*) from filter_1m where status_id_tinyint = 1;",
-				"int":           "select count(*) from filter_1m where status_id_int = 1;",
-				"int w/o where": "select count(*) from filter_1m",
-				"char":          "select count(*) from filter_1m where status_char = 'active';",
-				"varchar":       "select count(*) from filter_1m where status_varchar = 'active';",
-				"text":          "select count(*) from filter_1m where status_text = 'active';",
-			},
-			PostgreSql: {
-				//"tinyint": "select count(*) from filter_1m where status_id_tinyint = 1;",
-				"int":     "select count(*) from filter_1m where status_id_int = 1;",
-				"char":    "select count(*) from filter_1m where status_char = 'active';",
-				"varchar": "select count(*) from filter_1m where status_varchar = 'active';",
-				"text":    "select count(*) from filter_1m where status_text = 'active';",
-			},
-			//MsSql19: {
-			//	//"tinyint": "select count(*) from filter_1m where status_id_tinyint = 1;",
-			//	"int":     "select count(*) from filter_1m where status_id_int = 1;",
-			//	"char":    "select count(*) from filter_1m where status_char = 'active';",
-			//	"varchar": "select count(*) from filter_1m where status_varchar = 'active';",
-			//	"text":    "select count(*) from filter_1m where status_text = 'active';",
-			//},
-			MsSql22: {
-				//"tinyint": "select count(*) from filter_1m where status_id_tinyint = 1;",
-				"int":     "select count(*) from filter_1m where status_id_int = 1;",
-				"char":    "select count(*) from filter_1m where status_char = 'active';",
-				"varchar": "select count(*) from filter_1m where status_varchar = 'active';",
-				"text":    "select count(*) from filter_1m where status_text = 'active';",
-			},
-		},
-		QueryInt,
-		10,
-	},
-	"00-2": {
-		"filter 10 million rows table",
-		map[string]map[string]string{
-			MySql: {
-				"10%": "select count(*) from filter_1m where status_id_int = 0;",
-				"90%": "select count(*) from filter_1m where status_id_int = 1;",
-			},
-			PostgreSql: {
-				"10%": "select count(*) from filter_1m where status_id_int = 0;",
-				"90%": "select count(*) from filter_1m where status_id_int = 1;",
-			},
-			MsSql22: {
-				"10%": "select count(*) from filter_1m where status_id_int = 0;",
-				"90%": "select count(*) from filter_1m where status_id_int = 1;",
-			},
-		},
-		QueryInt,
-		10,
-	},
-	"00-3": {
-		"count rows in parallel",
-		map[string]map[string]string{
-			MySql: {
-				"w/o pk":  "select count(*) from filter_1m;",
-				"pk":      "select count(*) from filter_1m_with_pk;",
-				"pk - id": "select count(id) from filter_1m_with_pk;",
-			},
-			PostgreSql: {
-				"w/o pk":    "select count(*) from filter_1m;",
-				"pk":        "select count(*) from filter_1m_with_pk;",
-				"pk - id":   "select count(id) from filter_1m_with_pk;",
-				"4 threads": "set max_parallel_workers_per_gather = 4; select count(*) from filter_1m;",
-			},
-			MsSql22: {
-				"w/o pk":  "select count(*) from filter_1m;",
-				"pk":      "select count(*) from filter_1m_with_pk;",
-				"pk - id": "select count(id) from filter_1m_with_pk;",
-			},
-		},
-		QueryInt,
-		10,
-	},
 	"01": {
-		"lookup by primary key",
-		map[string]map[string]string{
-			MySql: {
-				"first key": "select id from client as c where id = 0;",
-				//"middle key":                        "select id from client as c where id = 5000;",
-				"last key": "select id from client as c where id = 9999;",
-				//"not existing key at the beginning": "select id from client as c where id = 100000;",
-				//"not existing key at the end":       "select id from client as c where id = 100000;",
-				"lookup_and_agg": "select count(*) from order_detail as od where order_id = 1;",
-			},
-			PostgreSql: {
-				"first key": "select id from client as c where id = 0;",
-				//"middle key":                        "select id from client as c where id = 5000;",
-				"last key": "select id from client as c where id = 9999;",
-				//"not existing key at the beginning": "select id from client as c where id = 100000;",
-				//"not existing key at the end":       "select id from client as c where id = 100000;",
-				"lookup_and_agg": "select count(*) from order_detail as od where order_id = 1;",
-			},
-			MsSql22: {
-				"first key": "select id from client as c where id = 0;",
-				//"middle key":                        "select id from client as c where id = 5000;",
-				"last key": "select id from client as c where id = 9999;",
-				//"not existing key at the beginning": "select id from client as c where id = 100000;",
-				//"not existing key at the end":       "select id from client as c where id = 100000;",
-				"lookup_and_agg": "select count(*) from order_detail as od where order_id = 1;",
-			},
-		},
-		QueryInt,
-		3000,
-	},
-	"02": {
-		"lookup by primary key + column not in index",
-		map[string]map[string]string{
-			MySql: {
-				"": "select id, name from client as c where id = 1;",
-			},
-			PostgreSql: {
-				"": "select id, name from client as c where id = 1;",
-			},
-			MsSql19: {
-				"": "select id, name from client as c where id = 1;",
-			},
-			MsSql22: {
-				"": "select id, name from client as c where id = 1;",
-			},
-		},
-		QueryIntAndString,
-		3000,
-	},
-	"03": {
-		"min and max",
-		map[string]map[string]string{
-			MySql: {
-				"min":     "select min(id) from client as c;",
-				"max":     "select min(id) from client as c;",
-				"min-max": "select min(id) + max(id) from client as c;",
-			},
-			PostgreSql: {
-				"min":     "select min(id) from client as c;",
-				"max":     "select min(id) from client as c;",
-				"min-max": "select min(id) + max(id) from client as c;",
-			},
-			//MsSql19: {
-			//	"min":     "select min(id) from client as c;",
-			//	"max":     "select min(id) from client as c;",
-			//	"min-max": "select min(id) + max(id) from client as c;",
-			//},
-			MsSql22: {
-				"min":     "select min(id) from client as c;",
-				"max":     "select min(id) from client as c;",
-				"min-max": "select min(id) + max(id) from client as c;",
-			},
-		},
-		QueryInt,
-		3000,
-	},
-	"04": {
-		"index seek with complex condition",
-		map[string]map[string]string{
-			MySql: {
-				"":                  "select count(*) from client where id >= 1 and id < 10000 and id < 2;",
-				"bigger range":      "select count(*) from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;",
-				"much bigger range": "select count(*) from order_detail where order_id >= 1 and order_id < 100000 and order_id < 2;",
-				"fixed":             "select count(*) from order_detail where order_id >= 1 and order_id < 2 and order_id < 100000;",
-			},
-			PostgreSql: {
-				"":                  "select count(*) from client where id >= 1 and id < 10000 and id < 2;",
-				"bigger range":      "select count(*) from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;",
-				"much bigger range": "select count(*) from order_detail where order_id >= 1 and order_id < 100000 and order_id < 2;",
-				"fixed":             "select count(*) from order_detail where order_id >= 1 and order_id < 2 and order_id < 100000;",
-			},
-			//MsSql19: {
-			//	"":                  "select count(*) from client where id >= 1 and id < 10000 and id < 2;",
-			//	"bigger range":      "select count(*) from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;",
-			//	"much bigger range": "select count(*) from order_detail where order_id >= 1 and order_id < 100000 and order_id < 2;",
-			//	"fixed":             "select count(*) from order_detail where order_id >= 1 and order_id < 2 and order_id < 100000;",
-			//},
-			MsSql22: {
-				"":                  "select count(*) from client where id >= 1 and id < 10000 and id < 2;",
-				"bigger range":      "select count(*) from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;",
-				"much bigger range": "select count(*) from order_detail where order_id >= 1 and order_id < 100000 and order_id < 2;",
-				"fixed":             "select count(*) from order_detail where order_id >= 1 and order_id < 2 and order_id < 100000;",
-			},
-		},
-		QueryInt,
-		200,
-	},
-	"05": {
 		"nonclustered index seek vs. scan",
 		map[string]map[string]string{
 			MySql: {
@@ -251,7 +65,69 @@ var Tests = map[string]testData{
 		QueryString,
 		200,
 	},
-	"05-min": {
+	"02": {
+		"index seek with complex condition",
+		map[string]map[string]string{
+			MySql: {
+				"":                  "select count(*) from client where id >= 1 and id < 10000 and id < 2;",
+				"bigger range":      "select count(*) from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;",
+				"much bigger range": "select count(*) from order_detail where order_id >= 1 and order_id < 100000 and order_id < 2;",
+				"fixed":             "select count(*) from order_detail where order_id >= 1 and order_id < 2 and order_id < 100000;",
+			},
+			PostgreSql: {
+				"":                  "select count(*) from client where id >= 1 and id < 10000 and id < 2;",
+				"bigger range":      "select count(*) from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;",
+				"much bigger range": "select count(*) from order_detail where order_id >= 1 and order_id < 100000 and order_id < 2;",
+				"fixed":             "select count(*) from order_detail where order_id >= 1 and order_id < 2 and order_id < 100000;",
+			},
+			//MsSql19: {
+			//	"":                  "select count(*) from client where id >= 1 and id < 10000 and id < 2;",
+			//	"bigger range":      "select count(*) from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;",
+			//	"much bigger range": "select count(*) from order_detail where order_id >= 1 and order_id < 100000 and order_id < 2;",
+			//	"fixed":             "select count(*) from order_detail where order_id >= 1 and order_id < 2 and order_id < 100000;",
+			//},
+			MsSql22: {
+				"":                  "select count(*) from client where id >= 1 and id < 10000 and id < 2;",
+				"bigger range":      "select count(*) from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;",
+				"much bigger range": "select count(*) from order_detail where order_id >= 1 and order_id < 100000 and order_id < 2;",
+				"fixed":             "select count(*) from order_detail where order_id >= 1 and order_id < 2 and order_id < 100000;",
+			},
+		},
+		QueryInt,
+		200,
+	},
+	"03": {
+		"count distinct",
+		map[string]map[string]string{
+			MySql: {
+				"a": "select count(distinct a) as cnt from group_by_table",
+				"b": "select count(distinct b) as cnt from group_by_table",
+				"c": "select count(distinct c) as cnt from group_by_table",
+			},
+			PostgreSql: {
+				"a":          "select count(distinct a) as cnt from group_by_table",
+				"b":          "set max_parallel_workers_per_gather = 1; select count(distinct b) as cnt from group_by_table",
+				"b-parallel": "select count(distinct b) as cnt from group_by_table",
+				"c":          "set max_parallel_workers_per_gather = 1; select count(distinct c) as cnt from group_by_table",
+				"c-parallel": "select count(distinct c) as cnt from group_by_table",
+				"a1":         "with recursive t as (select min(a) as x from group_by_table union all select (select min(a) from group_by_table where a > t.x) from t where t.x is not null) select count(*) from (select x from t where x is not null union all select null where exists (select 1 from group_by_table where a is null)) as tmp;",
+				"b1":         "with recursive t as (select min(b) as x from group_by_table union all select (select min(b) from group_by_table where b > t.x) from t where t.x is not null) select count(*) from (select x from t where x is not null union all select null where exists (select 1 from group_by_table where b is null)) as tmp;",
+				"c1":         "with recursive t as (select min(c) as x from group_by_table union all select (select min(c) from group_by_table where c > t.x) from t where t.x is not null) select count(*) from (select x from t where x is not null union all select null where exists (select 1 from group_by_table where c is null)) as tmp;",
+			},
+			MsSql22: {
+				"a":  "select count(distinct a) as cnt from group_by_table",
+				"b":  "select count(distinct b) as cnt from group_by_table",
+				"c":  "select count(distinct c) as cnt from group_by_table",
+				"a1": "create table #result (x int); declare @current int; select top (1) @current = a from group_by_table order by a; while @@rowcount > 0 begin insert into #result values (@current); select top (1) @current = a from group_by_table where a > @current order by a; end; select count(*) from #result;",
+				"b1": "create table #result (x int); declare @current int; select top (1) @current = b from group_by_table order by b; while @@rowcount > 0 begin insert into #result values (@current); select top (1) @current = b from group_by_table where b > @current order by b; end; select count(*) from #result;",
+				"c1": "create table #result (x int); declare @current int; select top (1) @current = c from group_by_table order by c; while @@rowcount > 0 begin insert into #result values (@current); select top (1) @current = c from group_by_table where c > @current order by c; end; select count(*) from #result;",
+			},
+		},
+		QueryInt,
+		20,
+	},
+
+	"03-min": {
 		"nonclustered index seek vs. scan",
 		map[string]map[string]string{
 			MySql: {
@@ -285,7 +161,7 @@ var Tests = map[string]testData{
 		QueryString,
 		200,
 	},
-	"05-min-large": {
+	"03-min-large": {
 		"nonclustered index seek vs. scan",
 		map[string]map[string]string{
 			MySql: {
@@ -418,35 +294,161 @@ var Tests = map[string]testData{
 		QueryInt,
 		300,
 	},
-	"10": {
-		"count distinct",
+
+	"needs-refactoring-00-1": {
+		"filter about 90% of 10 million rows table",
 		map[string]map[string]string{
 			MySql: {
-				"a": "select count(distinct a) as cnt from group_by_table",
-				"b": "select count(distinct b) as cnt from group_by_table",
-				"c": "select count(distinct c) as cnt from group_by_table",
+				//"tinyint": "select count(*) from filter_1m where status_id_tinyint = 1;",
+				"int":           "select count(*) from filter_1m where status_id_int = 1;",
+				"int w/o where": "select count(*) from filter_1m",
+				"char":          "select count(*) from filter_1m where status_char = 'active';",
+				"varchar":       "select count(*) from filter_1m where status_varchar = 'active';",
+				"text":          "select count(*) from filter_1m where status_text = 'active';",
 			},
 			PostgreSql: {
-				"a":          "select count(distinct a) as cnt from group_by_table",
-				"b":          "set max_parallel_workers_per_gather = 1; select count(distinct b) as cnt from group_by_table",
-				"b-parallel": "select count(distinct b) as cnt from group_by_table",
-				"c":          "set max_parallel_workers_per_gather = 1; select count(distinct c) as cnt from group_by_table",
-				"c-parallel": "select count(distinct c) as cnt from group_by_table",
-				"a1":         "with recursive t as (select min(a) as x from group_by_table union all select (select min(a) from group_by_table where a > t.x) from t where t.x is not null) select count(*) from (select x from t where x is not null union all select null where exists (select 1 from group_by_table where a is null)) as tmp;",
-				"b1":         "with recursive t as (select min(b) as x from group_by_table union all select (select min(b) from group_by_table where b > t.x) from t where t.x is not null) select count(*) from (select x from t where x is not null union all select null where exists (select 1 from group_by_table where b is null)) as tmp;",
-				"c1":         "with recursive t as (select min(c) as x from group_by_table union all select (select min(c) from group_by_table where c > t.x) from t where t.x is not null) select count(*) from (select x from t where x is not null union all select null where exists (select 1 from group_by_table where c is null)) as tmp;",
+				//"tinyint": "select count(*) from filter_1m where status_id_tinyint = 1;",
+				"int":     "select count(*) from filter_1m where status_id_int = 1;",
+				"char":    "select count(*) from filter_1m where status_char = 'active';",
+				"varchar": "select count(*) from filter_1m where status_varchar = 'active';",
+				"text":    "select count(*) from filter_1m where status_text = 'active';",
 			},
+			//MsSql19: {
+			//	//"tinyint": "select count(*) from filter_1m where status_id_tinyint = 1;",
+			//	"int":     "select count(*) from filter_1m where status_id_int = 1;",
+			//	"char":    "select count(*) from filter_1m where status_char = 'active';",
+			//	"varchar": "select count(*) from filter_1m where status_varchar = 'active';",
+			//	"text":    "select count(*) from filter_1m where status_text = 'active';",
+			//},
 			MsSql22: {
-				"a":  "select count(distinct a) as cnt from group_by_table",
-				"b":  "select count(distinct b) as cnt from group_by_table",
-				"c":  "select count(distinct c) as cnt from group_by_table",
-				"a1": "create table #result (x int); declare @current int; select top (1) @current = a from group_by_table order by a; while @@rowcount > 0 begin insert into #result values (@current); select top (1) @current = a from group_by_table where a > @current order by a; end; select count(*) from #result;",
-				"b1": "create table #result (x int); declare @current int; select top (1) @current = b from group_by_table order by b; while @@rowcount > 0 begin insert into #result values (@current); select top (1) @current = b from group_by_table where b > @current order by b; end; select count(*) from #result;",
-				"c1": "create table #result (x int); declare @current int; select top (1) @current = c from group_by_table order by c; while @@rowcount > 0 begin insert into #result values (@current); select top (1) @current = c from group_by_table where c > @current order by c; end; select count(*) from #result;",
+				//"tinyint": "select count(*) from filter_1m where status_id_tinyint = 1;",
+				"int":     "select count(*) from filter_1m where status_id_int = 1;",
+				"char":    "select count(*) from filter_1m where status_char = 'active';",
+				"varchar": "select count(*) from filter_1m where status_varchar = 'active';",
+				"text":    "select count(*) from filter_1m where status_text = 'active';",
 			},
 		},
 		QueryInt,
-		20,
+		10,
+	},
+	"needs-refactoring-00-2": {
+		"filter 10 million rows table",
+		map[string]map[string]string{
+			MySql: {
+				"10%": "select count(*) from filter_1m where status_id_int = 0;",
+				"90%": "select count(*) from filter_1m where status_id_int = 1;",
+			},
+			PostgreSql: {
+				"10%": "select count(*) from filter_1m where status_id_int = 0;",
+				"90%": "select count(*) from filter_1m where status_id_int = 1;",
+			},
+			MsSql22: {
+				"10%": "select count(*) from filter_1m where status_id_int = 0;",
+				"90%": "select count(*) from filter_1m where status_id_int = 1;",
+			},
+		},
+		QueryInt,
+		10,
+	},
+	"needs-refactoring-00-3": {
+		"count rows in parallel",
+		map[string]map[string]string{
+			MySql: {
+				"w/o pk":  "select count(*) from filter_1m;",
+				"pk":      "select count(*) from filter_1m_with_pk;",
+				"pk - id": "select count(id) from filter_1m_with_pk;",
+			},
+			PostgreSql: {
+				"w/o pk":    "select count(*) from filter_1m;",
+				"pk":        "select count(*) from filter_1m_with_pk;",
+				"pk - id":   "select count(id) from filter_1m_with_pk;",
+				"4 threads": "set max_parallel_workers_per_gather = 4; select count(*) from filter_1m;",
+			},
+			MsSql22: {
+				"w/o pk":  "select count(*) from filter_1m;",
+				"pk":      "select count(*) from filter_1m_with_pk;",
+				"pk - id": "select count(id) from filter_1m_with_pk;",
+			},
+		},
+		QueryInt,
+		10,
+	},
+	"needs-refactoring-01": {
+		"lookup by primary key",
+		map[string]map[string]string{
+			MySql: {
+				"first key": "select id from client as c where id = 0;",
+				//"middle key":                        "select id from client as c where id = 5000;",
+				"last key": "select id from client as c where id = 9999;",
+				//"not existing key at the beginning": "select id from client as c where id = 100000;",
+				//"not existing key at the end":       "select id from client as c where id = 100000;",
+				"lookup_and_agg": "select count(*) from order_detail as od where order_id = 1;",
+			},
+			PostgreSql: {
+				"first key": "select id from client as c where id = 0;",
+				//"middle key":                        "select id from client as c where id = 5000;",
+				"last key": "select id from client as c where id = 9999;",
+				//"not existing key at the beginning": "select id from client as c where id = 100000;",
+				//"not existing key at the end":       "select id from client as c where id = 100000;",
+				"lookup_and_agg": "select count(*) from order_detail as od where order_id = 1;",
+			},
+			MsSql22: {
+				"first key": "select id from client as c where id = 0;",
+				//"middle key":                        "select id from client as c where id = 5000;",
+				"last key": "select id from client as c where id = 9999;",
+				//"not existing key at the beginning": "select id from client as c where id = 100000;",
+				//"not existing key at the end":       "select id from client as c where id = 100000;",
+				"lookup_and_agg": "select count(*) from order_detail as od where order_id = 1;",
+			},
+		},
+		QueryInt,
+		3000,
+	},
+	"needs-refactoring-02": {
+		"lookup by primary key + column not in index",
+		map[string]map[string]string{
+			MySql: {
+				"": "select id, name from client as c where id = 1;",
+			},
+			PostgreSql: {
+				"": "select id, name from client as c where id = 1;",
+			},
+			MsSql19: {
+				"": "select id, name from client as c where id = 1;",
+			},
+			MsSql22: {
+				"": "select id, name from client as c where id = 1;",
+			},
+		},
+		QueryIntAndString,
+		3000,
+	},
+	"needs-refactoring-03": {
+		"min and max",
+		map[string]map[string]string{
+			MySql: {
+				"min":     "select min(id) from client as c;",
+				"max":     "select min(id) from client as c;",
+				"min-max": "select min(id) + max(id) from client as c;",
+			},
+			PostgreSql: {
+				"min":     "select min(id) from client as c;",
+				"max":     "select min(id) from client as c;",
+				"min-max": "select min(id) + max(id) from client as c;",
+			},
+			//MsSql19: {
+			//	"min":     "select min(id) from client as c;",
+			//	"max":     "select min(id) from client as c;",
+			//	"min-max": "select min(id) + max(id) from client as c;",
+			//},
+			MsSql22: {
+				"min":     "select min(id) from client as c;",
+				"max":     "select min(id) from client as c;",
+				"min-max": "select min(id) + max(id) from client as c;",
+			},
+		},
+		QueryInt,
+		3000,
 	},
 }
 
