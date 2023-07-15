@@ -8,6 +8,28 @@ explain analyze select count(*) as cnt from (select b from group_by_table group 
 explain analyze select count(*) as cnt from (select c from group_by_table group by c) as tmp;
 
 
+-- 02 - index seek with complex condition
+explain analyze select count(*) from client where id >= 1 and id < 10000 and id < 2;
+explain analyze select count(*) from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;
+explain analyze select count(*) from order_detail where order_id >= 1 and order_id < 100000 and order_id < 2;
+explain analyze select count(*) from order_detail where order_id >= 1 and order_id < 2 and order_id < 100000;
+
+# set @sql = 'select count(order_id), '''' from order_detail where order_id >= ? and order_id < ? and order_id < ?';
+# prepare stmt from @sql;
+# set @a = 1;
+# set @b = 10000;
+# set @c = 2;
+# execute stmt using @a, @b, @c;d
+# deallocate prepare stmt;
+
+/*
+ https://dev.mysql.com/doc/internals/en/prepared-stored-statement-execution.html
+
+ That basically says that the execution plan created for the prepared statement at compile time is not used. At
+ execution time, once the variables are bound, it uses the values to create a new execution plan and uses that one.
+ */
+
+
 -- 00 - table scan
 explain analyze select count(*) from filter_1m where status_id_tinyint = 0;
 explain analyze select count(*) from filter_1m where status_id_int = 0;
@@ -46,25 +68,6 @@ explain analyze select min(id) from client;
 explain analyze select max(id) from client;
 explain analyze select min(id) + max(id) from client;
 
-
--- 04 - index seek with complex condition
-explain analyze select count(*) from client where id >= 1 and id < 10000 and id < 2;
-explain analyze select count(*) from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;
-
-# set @sql = 'select count(order_id), '''' from order_detail where order_id >= ? and order_id < ? and order_id < ?';
-# prepare stmt from @sql;
-# set @a = 1;
-# set @b = 10000;
-# set @c = 2;
-# execute stmt using @a, @b, @c;d
-# deallocate prepare stmt;
-
-/*
- https://dev.mysql.com/doc/internals/en/prepared-stored-statement-execution.html
-
- That basically says that the execution plan created for the prepared statement at compile time is not used. At
- execution time, once the variables are bound, it uses the values to create a new execution plan and uses that one.
- */
 
 
 -- 05 - nonclustered index seek vs. scan

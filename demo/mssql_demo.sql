@@ -84,6 +84,17 @@ while @@rowcount > 0
 select count(*) from #result;
 
 
+-- 02 - index seek with complex condition
+select count(*) from client where id >= 1 and id < 10000 and id < 2;
+select count(*) from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;
+select count(*) from order_detail where order_id >= 1 and order_id < 100000 and order_id < 2;
+select count(*) from order_detail where order_id >= 1 and order_id < 2 and order_id < 100000;
+
+-- declare @a int = 1, @b int = 10000, @c int = 2;
+-- select count(*) from order_detail where order_id >= @a and order_id < @b and order_id < @c;
+
+
+
 -- 00 - table scan
 select count(*) from filter_1m where status_id_tinyint = 0;
 select count(*) from filter_1m where status_id_int = 0;
@@ -115,15 +126,6 @@ select id, name from client where id = 100000;
 select min(id) from client;
 select max(id) from client;
 select min(id) + max(id) from client;
-
-
--- 04 - index seek with complex condition
-select count(*) from client where id >= 1 and id < 10000 and id > 9990;
-select count(*) from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;
-
-
--- declare @a int = 1, @b int = 10000, @c int = 2;
--- select count(*) from order_detail where order_id >= @a and order_id < @b and order_id < @c;
 
 -- 05 - nonclustered index seek vs. scan
 select count(name) from client where country = 'UK'; -- 1
