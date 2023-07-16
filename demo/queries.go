@@ -195,23 +195,24 @@ var Tests = map[string]testData{
 		"grouping with partial aggregation",
 		map[string]map[string]string{
 			MySql: {
-				"small": "select count(*) from (select p.name, count(*) from `order` as o inner join group_by_table as l on l.id = o.id inner join product as p on p.id = l.c group by p.name) as t;",
-				"big":   "select count(*) from (select p.name, count(*) from `order` as o inner join group_by_table as l on l.id = o.id inner join product as p on p.id = l.a group by p.name) as t;",
+				"small": "select min(cnt) as a, min(name) as b from (select p.name, count(*) as cnt from `order` as o inner join group_by_table as l on l.id = o.id inner join product as p on p.id = l.c group by p.name) as t;",
+				"big":   "select min(cnt) as a, min(name) as b from (select p.name, count(*) as cnt from `order` as o inner join group_by_table as l on l.id = o.id inner join product as p on p.id = l.a group by p.name) as t;",
 			},
 			PostgreSql: {
-				"small":           "select count(*) from (select p.name, count(*) from \"order\" as o inner join group_by_table as l on l.id = o.id inner join product as p on p.id = l.c group by p.name) as t;",
-				"small-optimized": "select count(*) from (select p.name, cnt from (select l.c, count(*) as cnt from \"order\" as o inner join group_by_table as l on l.id = o.id group by l.c) as t inner join product as p on p.id = t.c) as t;",
-				"big":             "select count(*) from (select p.name, count(*) from \"order\" as o inner join group_by_table as l on l.id = o.id inner join product as p on p.id = l.a group by p.name) as t;",
+				"small":           "select min(cnt) as a, min(name) as b from (select p.name, count(*) as cnt from \"order\" as o inner join group_by_table as l on l.id = o.id inner join product as p on p.id = l.c group by p.name) as t;",
+				"small-optimized": "select min(cnt) as a, min(name) as b from (select p.name, cnt from (select l.c, count(*) as cnt from \"order\" as o inner join group_by_table as l on l.id = o.id group by l.c) as t inner join product as p on p.id = t.c) as t;",
+				"big":             "select min(cnt) as a, min(name) as b from (select p.name, count(*) as cnt from \"order\" as o inner join group_by_table as l on l.id = o.id inner join product as p on p.id = l.a group by p.name) as t;",
 			},
 			MsSql22: {
-				"small": "select count(*) from (select p.name, count(*) as cnt from [order] as o inner join group_by_table as l on l.id = o.id inner join product as p on p.id = l.c group by p.name) as t;",
-				"big":   "select count(*) from (select p.name, count(*) as cnt from [order] as o inner join group_by_table as l on l.id = o.id inner join product as p on p.id = l.a group by p.name) as t;",
+				"small": "select min(cnt) as a, min(name) as b from (select p.name, count(*) as cnt from [order] as o inner join group_by_table as l on l.id = o.id inner join product as p on p.id = l.c group by p.name) as t;",
+				"big":   "select min(cnt) as a, min(name) as b from (select p.name, count(*) as cnt from [order] as o inner join group_by_table as l on l.id = o.id inner join product as p on p.id = l.a group by p.name) as t;",
 			},
 		},
-		QueryInt,
+		QueryIntAndString,
 		0,
 	},
-	"09": {
+
+	"06": {
 		"combine select from 2 indexes",
 		map[string]map[string]string{
 			MySql: {

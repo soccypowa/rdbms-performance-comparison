@@ -143,11 +143,6 @@ select o.id as order_id, sum(od.price) as total_price from [order] as o inner lo
 
 
 -- 05 - grouping with partial aggregation
-ALTER DATABASE test_db SET COMPATIBILITY_LEVEL = 140; -- 2017
-ALTER DATABASE test_db SET COMPATIBILITY_LEVEL = 150; -- 2019
-ALTER DATABASE test_db SET COMPATIBILITY_LEVEL = 160; -- 2022
-
-
 select p.name, count(*) as cnt
 from [order] as o
 inner join group_by_table as l on l.id = o.id
@@ -224,3 +219,8 @@ where l.c2 >= 0 and l.c2 < 50 and l.c3 = 1;
 select count(*)
 from large_group_by_table as l
 where (l.c2 = 1 or l.c2 = 2 or l.c2 > 50) and l.c3 = 1;
+
+
+ALTER DATABASE test_db SET COMPATIBILITY_LEVEL = 140; -- 2017
+ALTER DATABASE test_db SET COMPATIBILITY_LEVEL = 150; -- 2019
+ALTER DATABASE test_db SET COMPATIBILITY_LEVEL = 160; -- 2022
