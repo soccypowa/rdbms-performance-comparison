@@ -110,13 +110,11 @@ explain analyze select o.id as order_id, sum(od.price) as total_price from "orde
 -- pre-agg
 explain analyze select o.id as order_id, sum(od_agg.price) as total_price from "order" as o inner join (select od.order_id, sum(od.price) as price from order_detail as od group by od.order_id) as od_agg on od_agg.order_id = o.id group by o.id;
 
-explain analyze select count(order_id), sum(total_price) from (select o.id as order_id, sum(od.price) as total_price from "order" as o inner join order_detail as od on od.order_id = o.id group by o.id) as tmp;
-
-explain analyze select count(*) from "order" as o inner join order_detail as od on od.order_id = o.id;
-
 /*
 set enable_hashjoin = off;
 set enable_hashjoin = on;
+set enable_mergejoin = off;
+set enable_mergejoin = on;
 set max_parallel_workers_per_gather = 0;
 set max_parallel_workers_per_gather = 2;
 set max_parallel_workers_per_gather = 4;
@@ -124,20 +122,11 @@ set work_mem = 4096;
 set work_mem = 2048;
 set work_mem = 1024;
 
+show enable_mergejoin;
 show enable_hashjoin;
 show work_mem;
 show max_parallel_workers_per_gather;
 */
-
-explain analyze select count(*) from "order" as o inner join (select order_id from order_detail group by order_id) as od on od.order_id = o.id;
-
-explain analyze select count(*) from "order" as o inner join (select order_id, product_id from order_detail group by order_id, product_id) as od on od.order_id = o.id;
-
-explain analyze select count(*) from client as a inner join client as b on a.name < b.name;
-
-------------------------------------------------------------------------------------------------------------------------
-explain analyze select order_id from order_detail group by order_id;
-
 
 
 -- 00 - table scan

@@ -14,6 +14,8 @@ explain analyze select count(*) from order_detail where order_id >= 1 and order_
 explain analyze select count(*) from order_detail where order_id >= 1 and order_id < 100000 and order_id < 2;
 explain analyze select count(*) from order_detail where order_id >= 1 and order_id < 2 and order_id < 100000;
 
+-- https://dev.mysql.com/doc/refman/8.0/en/range-optimization.html
+
 # set @sql = 'select count(order_id), '''' from order_detail where order_id >= ? and order_id < ? and order_id < ?';
 # prepare stmt from @sql;
 # set @a = 1;
@@ -56,20 +58,13 @@ explain analyze select o.id as order_id, sum(od.price) as total_price from `orde
 
 -- pre-agg
 explain analyze select o.id as order_id, sum(od_agg.price) as total_price from `order` as o inner join (select od.order_id, sum(od.price) as price from order_detail as od group by od.order_id) as od_agg on od_agg.order_id = o.id group by o.id;
+explain analyze select /*+ SEMIJOIN(@subq1 FIRSTMATCH) */ o.id as order_id, sum(od_agg.price) as total_price from `order` as o inner join (select /*+ QB_NAME(subq1) */ od.order_id, sum(od.price) as price from order_detail as od group by od.order_id) as od_agg on od_agg.order_id = o.id group by o.id;
+
+-- force hash join
+explain analyze select o.id as order_id, sum(od.price) as total_price from `order` as o inner join order_detail as od ignore index (primary) on od.order_id = o.id group by o.id;
+explain analyze select o.id as order_id, sum(od.price) as total_price from `order` as o ignore index (primary) inner join order_detail as od ignore index (primary) on od.order_id = o.id group by o.id;
 
 
-
-explain analyze select o.id as order_id, sum(od.price) as total_price from `order` as o inner join order_detail as od on od.order_id = o.id group by o.id;
-
-explain analyze select count(*) from `order` as o inner join order_detail as od on od.order_id = o.id;
-
-explain analyze select count(*) from `order` as o inner join (select order_id from order_detail group by order_id) as od on od.order_id = o.id;
-
-explain analyze select /*+ BNL(o, od) */ count(*) from `order` as o inner join order_detail as od on od.order_id = o.id;
-
-explain analyze select count(*) from client as a inner join client as b on a.name < b.name;
-
--- https://dev.mysql.com/doc/refman/8.0/en/optimizer-hints.html#optimizer-hints-table-level
 
 
 
