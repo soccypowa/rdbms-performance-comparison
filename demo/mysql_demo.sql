@@ -70,6 +70,22 @@ explain analyze select o.id as order_id, sum(od.price) as total_price from `orde
 explain analyze select o.id as order_id, sum(od.price) as total_price from `order` as o ignore index (primary) inner join order_detail as od ignore index (primary) on od.order_id = o.id group by o.id;
 
 
+-- 05 - grouping with partial aggregation
+explain analyze
+    select p.name, count(*)
+    from `order` as o
+    inner join group_by_table as l on l.id = o.id
+    inner join product as p on p.id = l.c
+    group by p.name;
+
+explain analyze
+    select p.name, count(*)
+    from `order` as o
+    inner join group_by_table as l on l.id = o.id
+    inner join product as p on p.id = l.a
+    group by p.name;
+
+
 
 
 
@@ -110,27 +126,6 @@ explain analyze select id, name from client where id = 100000;
 explain analyze select min(id) from client;
 explain analyze select max(id) from client;
 explain analyze select min(id) + max(id) from client;
-
-
--- 08 - grouping with partial aggregation
-explain analyze select count(*)
-from (
-    select p.name, count(*)
-    from `order` as o
-    inner join large_group_by_table as l on l.id = o.id
-    inner join product as p on p.id = l.c1
-    group by p.name
-) as t;
-
-explain analyze select count(*)
-from (
-    select p.name, count(*)
-    from `order` as o
-    inner join large_group_by_table as l on l.id = o.id
-    inner join product as p on p.id = l.c4
-    group by p.name
-) as t;
-
 
 -- 09 - combine select from 2 indexes
 explain analyze select count(*)

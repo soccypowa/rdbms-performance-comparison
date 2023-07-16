@@ -134,6 +134,33 @@ show max_parallel_workers_per_gather;
 */
 
 
+-- 05 - grouping with partial aggregation
+explain analyze
+    select p.name, count(*)
+    from "order" as o
+    inner join group_by_table as l on l.id = o.id
+    inner join product as p on p.id = l.c
+    group by p.name;
+
+explain analyze
+    select p.name, count(*)
+    from "order" as o
+    inner join group_by_table as l on l.id = o.id
+    inner join product as p on p.id = l.a
+    group by p.name;
+
+-- optimized
+explain analyze
+    select p.name, cnt
+    from (
+        select l.c, count(*) as cnt
+        from "order" as o
+        inner join group_by_table as l on l.id = o.id group by l.c
+    ) as t
+    inner join product as p on p.id = t.c;
+
+
+
 -- 00 - table scan
 explain analyze select count(*) from filter_1m where status_id_tinyint = 0;
 explain analyze select count(*) from filter_1m where status_id_int = 0;
@@ -166,37 +193,6 @@ explain analyze select id, name from client where id = 100000;
 explain analyze select min(id) from client;
 explain analyze select max(id) from client;
 explain analyze select min(id) + max(id) from client;
-
--- 08 - grouping with partial aggregation
-explain analyze select count(*)
-from (
-    select p.name, count(*)
-    from "order" as o
-    inner join large_group_by_table as l on l.id = o.id
-    inner join product as p on p.id = l.c1
-    group by p.name
-) as t;
-
-explain analyze select count(*)
-from (
-    select p.name, count(*)
-    from "order" as o
-    inner join large_group_by_table as l on l.id = o.id
-    inner join product as p on p.id = l.c4
-    group by p.name
-) as t;
-
-
-explain analyze select count(*)
-from (
-    select p.name, cnt
-    from (select l.c1, count(*) as cnt
-          from "order" as o
-                   inner join large_group_by_table as l on l.id = o.id group by l.c1) as t
-    inner join product as p on p.id = t.c1
-) as t;
-
-
 
 -- 09 - combine select from 2 indexes
 explain analyze select count(*)

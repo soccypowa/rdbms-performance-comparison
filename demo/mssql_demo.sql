@@ -142,6 +142,28 @@ select o.id as order_id, sum(od_agg.price) as total_price from [order] as o inne
 select o.id as order_id, sum(od.price) as total_price from [order] as o inner loop join order_detail as od on od.order_id = o.id group by o.id option (maxdop 1)
 
 
+-- 05 - grouping with partial aggregation
+ALTER DATABASE test_db SET COMPATIBILITY_LEVEL = 140; -- 2017
+ALTER DATABASE test_db SET COMPATIBILITY_LEVEL = 150; -- 2019
+ALTER DATABASE test_db SET COMPATIBILITY_LEVEL = 160; -- 2022
+
+
+select p.name, count(*) as cnt
+from [order] as o
+inner join group_by_table as l on l.id = o.id
+inner join product as p on p.id = l.c
+group by p.name;
+
+select p.name, count(*) as cnt
+from [order] as o
+inner join group_by_table as l on l.id = o.id
+inner join product as p on p.id = l.a
+group by p.name;
+
+
+
+
+
 
 -- 00 - table scan
 select count(*) from filter_1m where status_id_tinyint = 0;
@@ -174,41 +196,6 @@ select id, name from client where id = 100000;
 select min(id) from client;
 select max(id) from client;
 select min(id) + max(id) from client;
-
--- 06 - join 2 sorted tables
-select count(*) from client as c inner join client_ex as c_ex on c_ex.id = c.id;
-select count(*) from [order] as o inner join order_detail as od on od.order_id = o.id;
-
-select count(*) from [order] as o inner loop join order_detail as od on od.order_id = o.id;
-select sum(c) from [order] as o cross apply (select count(*) as c from order_detail as od where od.order_id = o.id) as t;
-select count(*) from [order] as o inner join (select order_id from order_detail group by order_id) as od on od.order_id = o.id;
-
-select count(*) from client as a inner join client as b on a.name < b.name;
-
-
-
--- 08 - grouping with partial aggregation
-ALTER DATABASE test_db SET COMPATIBILITY_LEVEL = 140; -- 2017
-ALTER DATABASE test_db SET COMPATIBILITY_LEVEL = 150; -- 2019
-ALTER DATABASE test_db SET COMPATIBILITY_LEVEL = 160; -- 2022
-
-select count(*)
-from (
-    select p.name, count(*) as cnt
-    from [order] as o
-    inner join large_group_by_table as l on l.id = o.id
-    inner join product as p on p.id = l.c1
-    group by p.name
-) as t;
-
-select count(*)
-from (
-    select p.name, count(*) as cnt
-    from [order] as o
-    inner join large_group_by_table as l on l.id = o.id
-    inner join product as p on p.id = l.c4
-    group by p.name
-) as t;
 
 
 -- 09 - combine select from 2 indexes

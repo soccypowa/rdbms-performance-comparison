@@ -191,22 +191,21 @@ var Tests = map[string]testData{
 		QueryIntAndFloat64,
 		20,
 	},
-
-	"08": {
+	"05": {
 		"grouping with partial aggregation",
 		map[string]map[string]string{
 			MySql: {
-				"small": "select count(*) from (select p.name, count(*) from `order` as o inner join large_group_by_table as l on l.id = o.id inner join product as p on p.id = l.c1 group by p.name) as t;",
-				"big":   "select count(*) from (select p.name, count(*) from `order` as o inner join large_group_by_table as l on l.id = o.id inner join product as p on p.id = l.c4 group by p.name) as t;",
+				"small": "select count(*) from (select p.name, count(*) from `order` as o inner join group_by_table as l on l.id = o.id inner join product as p on p.id = l.c group by p.name) as t;",
+				"big":   "select count(*) from (select p.name, count(*) from `order` as o inner join group_by_table as l on l.id = o.id inner join product as p on p.id = l.a group by p.name) as t;",
 			},
 			PostgreSql: {
-				"small":         "select count(*) from (select p.name, count(*) from \"order\" as o inner join large_group_by_table as l on l.id = o.id inner join product as p on p.id = l.c1 group by p.name) as t;",
-				"big":           "select count(*) from (select p.name, count(*) from \"order\" as o inner join large_group_by_table as l on l.id = o.id inner join product as p on p.id = l.c4 group by p.name) as t;",
-				"big-optimized": "select count(*)\nfrom (\n    select p.name, cnt\n    from (select l.c1, count(*) as cnt\n          from \"order\" as o\n                   inner join large_group_by_table as l on l.id = o.id group by l.c1) as t\n    inner join product as p on p.id = t.c1\n) as t;\n",
+				"small":           "select count(*) from (select p.name, count(*) from \"order\" as o inner join group_by_table as l on l.id = o.id inner join product as p on p.id = l.c group by p.name) as t;",
+				"small-optimized": "select count(*) from (select p.name, cnt from (select l.c, count(*) as cnt from \"order\" as o inner join group_by_table as l on l.id = o.id group by l.c) as t inner join product as p on p.id = t.c) as t;",
+				"big":             "select count(*) from (select p.name, count(*) from \"order\" as o inner join group_by_table as l on l.id = o.id inner join product as p on p.id = l.a group by p.name) as t;",
 			},
 			MsSql22: {
-				"small": "select count(*) from (select p.name, count(*) as cnt from [order] as o inner join large_group_by_table as l on l.id = o.id inner join product as p on p.id = l.c1 group by p.name) as t;",
-				"big":   "select count(*) from (select p.name, count(*) as cnt from [order] as o inner join large_group_by_table as l on l.id = o.id inner join product as p on p.id = l.c4 group by p.name) as t;",
+				"small": "select count(*) from (select p.name, count(*) as cnt from [order] as o inner join group_by_table as l on l.id = o.id inner join product as p on p.id = l.c group by p.name) as t;",
+				"big":   "select count(*) from (select p.name, count(*) as cnt from [order] as o inner join group_by_table as l on l.id = o.id inner join product as p on p.id = l.a group by p.name) as t;",
 			},
 		},
 		QueryInt,
