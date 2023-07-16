@@ -8,6 +8,11 @@ explain analyze select count(*) as cnt from (select b from group_by_table group 
 explain analyze select count(*) as cnt from (select c from group_by_table group by c) as tmp;
 
 
+-- 01 - skip scan more complex  example
+explain analyze select order_id, min(product_id) as min_product_id from order_detail group by order_id;
+explain analyze select c1, min(c2) as min_c2 from large_group_by_table group by c1;
+
+
 -- 02 - index seek with complex condition
 explain analyze select count(*) from client where id >= 1 and id < 10000 and id < 2;
 explain analyze select count(*) from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;
@@ -105,13 +110,6 @@ explain analyze select id, name from client where id = 100000;
 explain analyze select min(id) from client;
 explain analyze select max(id) from client;
 explain analyze select min(id) + max(id) from client;
-
-
--- 07 - grouping
-explain analyze select min(min_product_id) from (select order_id, min(product_id) as min_product_id from order_detail group by order_id) as t;
-
--- Loose Index Scan in action
-explain analyze select min(min_c2) from (select c1, min(c2) as min_c2 from large_group_by_table group by c1) as t;
 
 
 -- 08 - grouping with partial aggregation

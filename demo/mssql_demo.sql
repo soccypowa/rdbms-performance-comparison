@@ -84,6 +84,24 @@ while @@rowcount > 0
 select count(*) from #result;
 
 
+-- 01 - skip scan more complex  example
+select order_id, min(product_id) as min_product_id from order_detail group by order_id;
+select c1, min(c2) as min_c2 from large_group_by_table group by c1;
+
+select min(t3.min_c2)
+from (select distinct(c1) as c1 from large_group_by_table) as t
+cross apply (select min(t2.c2) as min_c2 from large_group_by_table as t2 where t2.c1 = t.c1) as t3;
+
+select min(t4.min_c2)
+from (select min(c1) as min_c1, max(c1) as max_c1 from large_group_by_table) as t
+cross apply (select n.id from numbers as n where n.id >= t.min_c1 and n.id <= t.max_c1) as t2
+cross apply (select min(t3.c2) as min_c2 from large_group_by_table as t3 where t3.c1 = t2.id) as t4;
+
+select min(t3.min_c2)
+from (select 0 as c1 union all select 1 union all select 2 union all select 3 union all select 4 union all select 5 union all select 6 union all select 7 union all select 8 union all select 9) as t
+cross apply (select min(t2.c2) as min_c2 from large_group_by_table as t2 where t2.c1 = t.c1) as t3;
+
+
 -- 02 - index seek with complex condition
 select count(*) from client where id >= 1 and id < 10000 and id < 2;
 select count(*) from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;
@@ -170,24 +188,6 @@ select count(*) from [order] as o inner join (select order_id from order_detail 
 
 select count(*) from client as a inner join client as b on a.name < b.name;
 
-
--- 07 - grouping
-select min(min_product_id) from (select order_id, min(product_id) as min_product_id from order_detail group by order_id) as t;
-
-select min(min_c2) from (select c1, min(c2) as min_c2 from large_group_by_table group by c1) as t;
-
-select min(t3.min_c2)
-from (select distinct(c1) as c1 from large_group_by_table) as t
-cross apply (select min(t2.c2) as min_c2 from large_group_by_table as t2 where t2.c1 = t.c1) as t3;
-
-select min(t4.min_c2)
-from (select min(c1) as min_c1, max(c1) as max_c1 from large_group_by_table) as t
-cross apply (select n.id from numbers as n where n.id >= t.min_c1 and n.id <= t.max_c1) as t2
-cross apply (select min(t3.c2) as min_c2 from large_group_by_table as t3 where t3.c1 = t2.id) as t4;
-
-select min(t3.min_c2)
-from (select 0 as c1 union all select 1 union all select 2 union all select 3 union all select 4 union all select 5 union all select 6 union all select 7 union all select 8 union all select 9) as t
-cross apply (select min(t2.c2) as min_c2 from large_group_by_table as t2 where t2.c1 = t.c1) as t3;
 
 
 -- 08 - grouping with partial aggregation
