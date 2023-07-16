@@ -146,38 +146,28 @@ var Tests = map[string]testData{
 		QueryString,
 		20,
 	},
-
-	"06": {
-		"join 2 sorted tables",
+	"04": {
+		"join and aggregate 2 sorted tables",
 		map[string]map[string]string{
 			MySql: {
-				//"client-ex":    "select count(*) from client as c inner join client_ex as c_ex on c_ex.id = c.id;",
-				"order-detail": "select count(*) from `order` as o inner join `order_detail` as od on od.order_id = o.id;",
-				"pre-agg":      "select count(*) from `order` as o inner join (select order_id from order_detail group by order_id) as od on od.order_id = o.id;",
+				"":              "select min(order_id), sum(total_price) from (select o.id as order_id, sum(od.price) as total_price from `order` as o inner join order_detail as od on od.order_id = o.id group by o.id) as tmp;",
+				"extra pre-agg": "select min(order_id), sum(total_price) from (select o.id as order_id, sum(od_agg.price) as total_price from `order` as o inner join (select od.order_id, sum(od.price) as price from order_detail as od group by od.order_id) as od_agg on od_agg.order_id = o.id group by o.id) as tmp;",
 			},
 			PostgreSql: {
-				//"client-ex":     "select count(*) from client as c inner join client_ex as c_ex on c_ex.id = c.id;",
-				"order-detail": "select count(*) from \"order\" as o inner join order_detail as od on od.order_id = o.id;",
-				"hashjoin=off": "set enable_hashjoin = off; select count(*) from \"order\" as o inner join order_detail as od on od.order_id = o.id; set enable_hashjoin = on;",
-				"pre-agg":      "select count(*) from \"order\" as o inner join (select order_id from order_detail group by order_id) as od on od.order_id = o.id;",
-				//"pre-agg-index": "select count(*) from \"order\" as o inner join (select order_id, product_id from order_detail group by order_id, product_id) as od on od.order_id = o.id;",
+				"":              "select min(order_id), sum(total_price) from (select o.id as order_id, sum(od.price) as total_price from \"order\" as o inner join order_detail as od on od.order_id = o.id group by o.id) as tmp;",
+				"extra pre-agg": "select min(order_id), sum(total_price) from (select o.id as order_id, sum(od_agg.price) as total_price from \"order\" as o inner join (select od.order_id, sum(od.price) as price from order_detail as od group by od.order_id) as od_agg on od_agg.order_id = o.id group by o.id) as tmp;",
 			},
-			//MsSql19: {
-			//	"client-ex":    "select count(*) from client as c inner join client_ex as c_ex on c_ex.id = c.id;",
-			//	"order-detail": "select count(*) from [order] as o inner join order_detail as od on od.order_id = o.id;",
-			//	"loop join":    "select count(*) from [order] as o inner loop join order_detail as od on od.order_id = o.id;",
-			//	"pre-agg":      "select count(*) from [order] as o inner join (select order_id from order_detail group by order_id) as od on od.order_id = o.id;",
-			//},
 			MsSql22: {
-				//"client-ex":    "select count(*) from client as c inner join client_ex as c_ex on c_ex.id = c.id;",
-				"order-detail": "select count(*) from [order] as o inner join order_detail as od on od.order_id = o.id;",
-				"loop join":    "select count(*) from [order] as o inner loop join order_detail as od on od.order_id = o.id;",
-				"pre-agg":      "select count(*) from [order] as o inner join (select order_id from order_detail group by order_id) as od on od.order_id = o.id;",
+				"":                     "select min(order_id), sum(total_price) from (select o.id as order_id, sum(od.price) as total_price from [order] as o inner join order_detail as od on od.order_id = o.id group by o.id) as tmp;",
+				"extra pre-agg":        "select o.id as order_id, sum(od_agg.price) as total_price from [order] as o inner join (select od.order_id, sum(od.price) as price from order_detail as od group by od.order_id) as od_agg on od_agg.order_id = o.id group by o.id;",
+				"loop join":            "select min(order_id), sum(total_price) from (select o.id as order_id, sum(od.price) as total_price from [order] as o inner loop join order_detail as od on od.order_id = o.id group by o.id) as tmp;",
+				"loop join (maxdop 1)": "select min(order_id), sum(total_price) from (select o.id as order_id, sum(od.price) as total_price from [order] as o inner loop join order_detail as od on od.order_id = o.id group by o.id) as tmp option (maxdop 1);",
 			},
 		},
-		QueryInt,
-		0,
+		QueryIntAndFloat64,
+		20,
 	},
+
 	"07": {
 		"grouping",
 		map[string]map[string]string{
@@ -448,6 +438,23 @@ func QueryIntAndString(ctx context.Context, db *sql.DB, query string) {
 		if err == sql.ErrNoRows {
 			i = -1
 			s = "N/A"
+		} else {
+			log.Fatalf("unable to execute query: %v", err)
+		}
+	}
+	//log.Println("result = ", result)
+}
+
+func QueryIntAndFloat64(ctx context.Context, db *sql.DB, query string) {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	var i int
+	var f float64
+	if err := db.QueryRowContext(ctx, query).Scan(&i, &f); err != nil {
+		if err == sql.ErrNoRows {
+			i = -1
+			f = 0.0
 		} else {
 			log.Fatalf("unable to execute query: %v", err)
 		}

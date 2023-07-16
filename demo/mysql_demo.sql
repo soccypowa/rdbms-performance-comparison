@@ -51,6 +51,27 @@ explain analyze select min(name) from client_large where country = 'US'; -- 400,
 explain analyze select min(name) from client_large where country >= 'US'; -- 733,333, table scan
 
 
+-- 04 - join and aggregate 2 sorted tables
+explain analyze select o.id as order_id, sum(od.price) as total_price from `order` as o inner join order_detail as od on od.order_id = o.id group by o.id;
+
+-- pre-agg
+explain analyze select o.id as order_id, sum(od_agg.price) as total_price from `order` as o inner join (select od.order_id, sum(od.price) as price from order_detail as od group by od.order_id) as od_agg on od_agg.order_id = o.id group by o.id;
+
+
+
+explain analyze select o.id as order_id, sum(od.price) as total_price from `order` as o inner join order_detail as od on od.order_id = o.id group by o.id;
+
+explain analyze select count(*) from `order` as o inner join order_detail as od on od.order_id = o.id;
+
+explain analyze select count(*) from `order` as o inner join (select order_id from order_detail group by order_id) as od on od.order_id = o.id;
+
+explain analyze select /*+ BNL(o, od) */ count(*) from `order` as o inner join order_detail as od on od.order_id = o.id;
+
+explain analyze select count(*) from client as a inner join client as b on a.name < b.name;
+
+-- https://dev.mysql.com/doc/refman/8.0/en/optimizer-hints.html#optimizer-hints-table-level
+
+
 
 -- 00 - table scan
 explain analyze select count(*) from filter_1m where status_id_tinyint = 0;
@@ -89,19 +110,6 @@ explain analyze select id, name from client where id = 100000;
 explain analyze select min(id) from client;
 explain analyze select max(id) from client;
 explain analyze select min(id) + max(id) from client;
-
-
--- 06 - join 2 sorted tables
-explain analyze select count(*) from client as c inner join client_ex as c_ex on c_ex.id = c.id;
-explain analyze select count(*) from `order` as o inner join order_detail as od on od.order_id = o.id;
-
-explain analyze select count(*) from `order` as o inner join (select order_id from order_detail group by order_id) as od on od.order_id = o.id;
-
-explain analyze select /*+ BNL(o, od) */ count(*) from `order` as o inner join order_detail as od on od.order_id = o.id;
-
-explain analyze select count(*) from client as a inner join client as b on a.name < b.name;
-
--- https://dev.mysql.com/doc/refman/8.0/en/optimizer-hints.html#optimizer-hints-table-level
 
 
 -- 07 - grouping
