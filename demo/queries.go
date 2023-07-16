@@ -159,7 +159,7 @@ var Tests = map[string]testData{
 			},
 			MsSql22: {
 				"":                     "select min(order_id), sum(total_price) from (select o.id as order_id, sum(od.price) as total_price from [order] as o inner join order_detail as od on od.order_id = o.id group by o.id) as tmp;",
-				"extra pre-agg":        "select o.id as order_id, sum(od_agg.price) as total_price from [order] as o inner join (select od.order_id, sum(od.price) as price from order_detail as od group by od.order_id) as od_agg on od_agg.order_id = o.id group by o.id;",
+				"extra pre-agg":        "select min(order_id), sum(total_price) from (select o.id as order_id, sum(od_agg.price) as total_price from [order] as o inner join (select od.order_id, sum(od.price) as price from order_detail as od group by od.order_id) as od_agg on od_agg.order_id = o.id group by o.id) as tmp;",
 				"loop join":            "select min(order_id), sum(total_price) from (select o.id as order_id, sum(od.price) as total_price from [order] as o inner loop join order_detail as od on od.order_id = o.id group by o.id) as tmp;",
 				"loop join (maxdop 1)": "select min(order_id), sum(total_price) from (select o.id as order_id, sum(od.price) as total_price from [order] as o inner loop join order_detail as od on od.order_id = o.id group by o.id) as tmp option (maxdop 1);",
 			},
