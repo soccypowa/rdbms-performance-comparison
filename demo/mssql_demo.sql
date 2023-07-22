@@ -167,7 +167,7 @@ where (l.c2 = 1 or l.c2 = 2 or l.c2 = 50) and l.c3 = 1;
 
 select count(*)
 from large_group_by_table as l
-inner join large_group_by_table as l2 on l2.id = l.id
+inner loop join large_group_by_table as l2 on l2.id = l.id
     and (l2.c2 = 1 or l2.c2 = 2 or l2.c2 = 50)
 where l.c3 = 1;
 
