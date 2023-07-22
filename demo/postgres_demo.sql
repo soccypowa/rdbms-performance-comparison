@@ -160,6 +160,26 @@ explain analyze
     inner join product as p on p.id = t.c;
 
 
+-- 06 - combine select from 2 indexes
+explain analyze select count(*)
+from large_group_by_table as l
+where l.c2 = 1 and l.c3 = 1;
+
+explain analyze select count(*)
+from large_group_by_table as l
+where (l.c2 = 1 or l.c2 = 2 or l.c2 = 50) and l.c3 = 1;
+
+explain analyze select count(*)
+from large_group_by_table as l
+where (l.c2 = 1 or l.c2 = 2 or l.c2 > 50) and l.c3 = 1;
+
+-- explain analyze select count(*)
+-- from large_group_by_table as l
+-- where l.c2 in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21) and l.c3 = 1;
+
+
+
+
 
 -- 00 - table scan
 explain analyze select count(*) from filter_1m where status_id_tinyint = 0;

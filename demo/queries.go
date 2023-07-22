@@ -211,26 +211,26 @@ var Tests = map[string]testData{
 		QueryIntAndString,
 		0,
 	},
-
 	"06": {
 		"combine select from 2 indexes",
 		map[string]map[string]string{
 			MySql: {
-				"simple":  "select count(*) from large_group_by_table as l where l.c2 = 1 and l.c3 = 1;",
-				"complex": "select count(*) from large_group_by_table as l where (l.c2 = 1 or l.c2 = 2 or l.c2 = 50) and l.c3 = 1;",
-				//"more complex": "select count(*)\nfrom large_group_by_table as l\nwhere (l.c2 = 1 or l.c2 = 2 or l.c2 > 50) and l.c3 = 1;",
+				"simple":       "select count(*) from large_group_by_table as l where l.c2 = 1 and l.c3 = 1;",
+				"complex":      "select count(*) from large_group_by_table as l where (l.c2 = 1 or l.c2 = 2 or l.c2 = 50) and l.c3 = 1;",
+				"more complex": "select count(*) from large_group_by_table as l where (l.c2 = 1 or l.c2 = 2 or l.c2 > 50) and l.c3 = 1;",
 				//"x":            "select count(*)\nfrom large_group_by_table as l\nwhere l.c2 in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21) and l.c3 = 1;",
 			},
 			PostgreSql: {
-				"simple":  "select count(*) from large_group_by_table as l where l.c2 = 1 and l.c3 = 1;",
-				"complex": "select count(*) from large_group_by_table as l where (l.c2 = 1 or l.c2 = 2 or l.c2 = 50) and l.c3 = 1;",
-				//"more complex": "select count(*)\nfrom large_group_by_table as l\nwhere (l.c2 = 1 or l.c2 = 2 or l.c2 > 50) and l.c3 = 1;",
+				"simple":       "select count(*) from large_group_by_table as l where l.c2 = 1 and l.c3 = 1;",
+				"complex":      "select count(*) from large_group_by_table as l where (l.c2 = 1 or l.c2 = 2 or l.c2 = 50) and l.c3 = 1;",
+				"more complex": "select count(*) from large_group_by_table as l where (l.c2 = 1 or l.c2 = 2 or l.c2 > 50) and l.c3 = 1;",
 				//"x":            "select count(*)\nfrom large_group_by_table as l\nwhere l.c2 in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21) and l.c3 = 1;",
 			},
 			MsSql22: {
-				"simple":  "select count(*) from large_group_by_table as l where l.c2 = 1 and l.c3 = 1;",
-				"complex": "select count(*) from large_group_by_table as l where (l.c2 = 1 or l.c2 = 2 or l.c2 = 50) and l.c3 = 1;",
-				//"more complex": "select count(*)\nfrom large_group_by_table as l\nwhere (l.c2 = 1 or l.c2 = 2 or l.c2 > 50) and l.c3 = 1;",
+				"simple":             "select count(*) from large_group_by_table as l where l.c2 = 1 and l.c3 = 1;",
+				"complex":            "select count(*) from large_group_by_table as l where (l.c2 = 1 or l.c2 = 2 or l.c2 = 50) and l.c3 = 1;",
+				"complex-optimized ": "select count(*) from large_group_by_table as l inner join large_group_by_table as l2 on l2.id = l.id and (l2.c2 = 1 or l2.c2 = 2 or l2.c2 = 50) where l.c3 = 1;",
+				"more complex":       "select count(*) from large_group_by_table as l where (l.c2 = 1 or l.c2 = 2 or l.c2 > 50) and l.c3 = 1;",
 				//"x":            "select count(*)\nfrom large_group_by_table as l\nwhere l.c2 in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21) and l.c3 = 1;",
 				//"x2":           "select count(*)\nfrom large_group_by_table as l\nwhere l.c2 >= 0 and l.c2 < 22 and l.c3 = 1;",
 			},

@@ -85,6 +85,27 @@ explain analyze
     inner join product as p on p.id = l.a
     group by p.name;
 
+-- 06 - combine select from 2 indexes
+explain analyze select count(*)
+from large_group_by_table as l
+where l.c2 = 1 and l.c3 = 1;
+
+explain analyze select count(*)
+from large_group_by_table as l
+where (l.c2 = 1 or l.c2 = 2 or l.c2 = 50) and l.c3 = 1;
+
+explain analyze select count(*)
+from large_group_by_table as l
+where (l.c2 = 1 or l.c2 = 2 or l.c2 > 50) and l.c3 = 1;
+
+-- explain analyze select count(*)
+-- from large_group_by_table as l
+-- where l.c2 in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21) and l.c3 = 1;
+
+
+
+
+
 
 
 
@@ -127,22 +148,6 @@ explain analyze select min(id) from client;
 explain analyze select max(id) from client;
 explain analyze select min(id) + max(id) from client;
 
--- 09 - combine select from 2 indexes
-explain analyze select count(*)
-from large_group_by_table as l
-where l.c2 = 1 and l.c3 = 1;
-
-explain analyze select count(*)
-from large_group_by_table as l
-where (l.c2 = 1 or l.c2 = 2 or l.c2 = 50) and l.c3 = 1;
-
-explain analyze select count(*)
-from large_group_by_table as l
-where l.c2 in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21) and l.c3 = 1;
-
-explain analyze select count(*)
-from large_group_by_table as l
-where (l.c2 = 1 or l.c2 = 2 or l.c2 > 50) and l.c3 = 1;
 
 
 /*

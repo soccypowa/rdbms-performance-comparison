@@ -156,6 +156,30 @@ inner join product as p on p.id = l.a
 group by p.name;
 
 
+-- 06 - combine select from 2 indexes
+select count(*)
+from large_group_by_table as l
+where l.c2 = 1 and l.c3 = 1;
+
+select count(*)
+from large_group_by_table as l
+where (l.c2 = 1 or l.c2 = 2 or l.c2 = 50) and l.c3 = 1;
+
+select count(*)
+from large_group_by_table as l
+inner join large_group_by_table as l2 on l2.id = l.id
+    and (l2.c2 = 1 or l2.c2 = 2 or l2.c2 = 50)
+where l.c3 = 1;
+
+select count(*)
+from large_group_by_table as l
+where (l.c2 = 1 or l.c2 = 2 or l.c2 > 50) and l.c3 = 1;
+
+-- explain analyze select count(*)
+-- from large_group_by_table as l
+-- where l.c2 in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21) and l.c3 = 1;
+
+
 
 
 
