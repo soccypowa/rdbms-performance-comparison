@@ -6,7 +6,7 @@ services:
 #      MARIADB_ROOT_PASSWORD: mariadb
 
   postgres:
-    image: postgres:15.3
+    image: postgres:15.4
     platform: linux/amd64
     ports:
       - "5432:5432"
@@ -18,7 +18,7 @@ services:
       - ./postgres_init.sql:/docker-entrypoint-initdb.d/init.sql
 
   mysql:
-    image: mysql:8.0.33
+    image: mysql:8.1.0
     platform: linux/amd64
     ports:
       - "3306:3306"
@@ -37,7 +37,7 @@ services:
       - "./mysql_init_09_group_by_table.sql:/docker-entrypoint-initdb.d/mysql_init_09_group_by_table.sql"
 
   mssql2022:
-    image: mcr.microsoft.com/mssql/server:2022-CU4-ubuntu-20.04
+    image: mcr.microsoft.com/mssql/server:2022-CU7-ubuntu-20.04
     platform: linux/amd64
     ports:
       - "1433:1433"
