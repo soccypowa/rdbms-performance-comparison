@@ -37,7 +37,7 @@ services:
       - "./mysql_init_09_group_by_table.sql:/docker-entrypoint-initdb.d/mysql_init_09_group_by_table.sql"
 
   mssql2022:
-    image: mcr.microsoft.com/mssql/server:2022-CU7-ubuntu-20.04
+    image: mcr.microsoft.com/mssql/server:2022-CU8-ubuntu-20.04
     platform: linux/amd64
     ports:
       - "1433:1433"
