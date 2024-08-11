@@ -134,11 +134,15 @@ select min(name) from client_large where country >= 'US'; -- 733,333
 
 -- 04 - join and aggregate 2 sorted tables
 select o.id as order_id, sum(od.price) as total_price from [order] as o inner join order_detail as od on od.order_id = o.id group by o.id;
+select o.id as order_id, sum(od.price) as total_price from [order] as o inner merge join order_detail as od on od.order_id = o.id group by o.id;
 
 -- pre-agg
 select o.id as order_id, sum(od_agg.price) as total_price from [order] as o inner join (select od.order_id, sum(od.price) as price from order_detail as od group by od.order_id) as od_agg on od_agg.order_id = o.id group by o.id;
 
--- lopp join
+-- pre-agg with merge join
+select o.id as order_id, sum(od_agg.price) as total_price from [order] as o inner merge join (select od.order_id, sum(od.price) as price from order_detail as od group by od.order_id) as od_agg on od_agg.order_id = o.id group by o.id;
+
+-- loop join
 select o.id as order_id, sum(od.price) as total_price from [order] as o inner loop join order_detail as od on od.order_id = o.id group by o.id option (maxdop 1)
 
 
