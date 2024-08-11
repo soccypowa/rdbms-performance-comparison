@@ -24,31 +24,31 @@ var Tests = map[string]testData{
 		"select distinct / count distinct",
 		map[string]map[string]string{
 			MySql: {
-				"a":              "select count(distinct a) as cnt from group_by_table",
-				"b":              "select count(distinct b) as cnt from group_by_table",
-				"c":              "select count(distinct c) as cnt from group_by_table",
-				"c-no-skip-scan": "select /*+ NO_SKIP_SCAN(group_by_table idx_group_by_table_c) */ count(distinct c) as cnt from group_by_table",
+				"a": "select count(distinct a) as cnt from group_by_table",
+				"b": "select count(distinct b) as cnt from group_by_table",
+				"c": "select count(distinct c) as cnt from group_by_table",
+				//"c-no-skip-scan": "select /*+ NO_SKIP_SCAN(group_by_table idx_group_by_table_c) */ count(distinct c) as cnt from group_by_table",
 			},
 			PostgreSql: {
-				"a":            "select count(distinct a) as cnt from group_by_table",
-				"b-sequential": "set max_parallel_workers_per_gather = 1; select count(distinct b) as cnt from group_by_table",
-				"b":            "select count(distinct b) as cnt from group_by_table",
-				"c-sequential": "set max_parallel_workers_per_gather = 1; select count(distinct c) as cnt from group_by_table",
-				"c":            "select count(distinct c) as cnt from group_by_table",
-				"a1":           "with recursive t as (select min(a) as x from group_by_table union all select (select min(a) from group_by_table where a > t.x) from t where t.x is not null) select count(*) from (select x from t where x is not null union all select null where exists (select 1 from group_by_table where a is null)) as tmp;",
-				"b1":           "with recursive t as (select min(b) as x from group_by_table union all select (select min(b) from group_by_table where b > t.x) from t where t.x is not null) select count(*) from (select x from t where x is not null union all select null where exists (select 1 from group_by_table where b is null)) as tmp;",
-				"c1":           "with recursive t as (select min(c) as x from group_by_table union all select (select min(c) from group_by_table where c > t.x) from t where t.x is not null) select count(*) from (select x from t where x is not null union all select null where exists (select 1 from group_by_table where c is null)) as tmp;",
+				"a": "select count(distinct a) as cnt from group_by_table",
+				//"b-sequential": "set max_parallel_workers_per_gather = 1; select count(distinct b) as cnt from group_by_table",
+				"b": "select count(distinct b) as cnt from group_by_table",
+				//"c-sequential": "set max_parallel_workers_per_gather = 1; select count(distinct c) as cnt from group_by_table",
+				"c":           "select count(distinct c) as cnt from group_by_table",
+				"a-recursive": "with recursive t as (select min(a) as x from group_by_table union all select (select min(a) from group_by_table where a > t.x) from t where t.x is not null) select count(*) from (select x from t where x is not null union all select null where exists (select 1 from group_by_table where a is null)) as tmp;",
+				"b-recursive": "with recursive t as (select min(b) as x from group_by_table union all select (select min(b) from group_by_table where b > t.x) from t where t.x is not null) select count(*) from (select x from t where x is not null union all select null where exists (select 1 from group_by_table where b is null)) as tmp;",
+				"c-recursive": "with recursive t as (select min(c) as x from group_by_table union all select (select min(c) from group_by_table where c > t.x) from t where t.x is not null) select count(*) from (select x from t where x is not null union all select null where exists (select 1 from group_by_table where c is null)) as tmp;",
 			},
 			MsSql22: {
-				"a":  "select count(distinct a) as cnt from group_by_table",
-				"b":  "select count(distinct b) as cnt from group_by_table",
-				"c":  "select count(distinct c) as cnt from group_by_table",
-				"a1": "create table #result (x int); declare @current int; select top (1) @current = a from group_by_table order by a; while @@rowcount > 0 begin insert into #result values (@current); select top (1) @current = a from group_by_table where a > @current order by a; end; select count(*) from #result;",
-				"b1": "create table #result (x int); declare @current int; select top (1) @current = b from group_by_table order by b; while @@rowcount > 0 begin insert into #result values (@current); select top (1) @current = b from group_by_table where b > @current order by b; end; select count(*) from #result;",
-				"c1": "create table #result (x int); declare @current int; select top (1) @current = c from group_by_table order by c; while @@rowcount > 0 begin insert into #result values (@current); select top (1) @current = c from group_by_table where c > @current order by c; end; select count(*) from #result;",
-				"a2": "with min_max as (select min(a) as min_a, max(a) as max_a from group_by_table), possible_values as (select n.id from numbers as n inner join min_max as mm on n.id >= mm.min_a and n.id <= mm.max_a), result as (select pv.id from possible_values as pv where exists (select top (1) 1 from group_by_table as g where g.a = pv.id)) select count(*) from result;",
-				"b2": "with min_max as (select min(b) as min_b, max(b) as max_b from group_by_table), possible_values as (select n.id from numbers as n inner join min_max as mm on n.id >= mm.min_b and n.id <= mm.max_b), result as (select pv.id from possible_values as pv where exists (select top (1) 1 from group_by_table as g where g.b = pv.id)) select count(*) from result;",
-				"c2": "with min_max as (select min(c) as min_c, max(c) as max_c from group_by_table), possible_values as (select n.id from numbers as n inner join min_max as mm on n.id >= mm.min_c and n.id <= mm.max_c), result as (select pv.id from possible_values as pv where exists (select top (1) 1 from group_by_table as g where g.c = pv.id)) select count(*) from result;",
+				"a": "select count(distinct a) as cnt from group_by_table",
+				"b": "select count(distinct b) as cnt from group_by_table",
+				"c": "select count(distinct c) as cnt from group_by_table",
+				//"a-temp-table": "create table #result (x int); declare @current int; select top (1) @current = a from group_by_table order by a; while @@rowcount > 0 begin insert into #result values (@current); select top (1) @current = a from group_by_table where a > @current order by a; end; select count(*) from #result;",
+				"b-temp-table": "create table #result (x int); declare @current int; select top (1) @current = b from group_by_table order by b; while @@rowcount > 0 begin insert into #result values (@current); select top (1) @current = b from group_by_table where b > @current order by b; end; select count(*) from #result;",
+				"c-temp-table": "create table #result (x int); declare @current int; select top (1) @current = c from group_by_table order by c; while @@rowcount > 0 begin insert into #result values (@current); select top (1) @current = c from group_by_table where c > @current order by c; end; select count(*) from #result;",
+				//"a-numbers-table": "with min_max as (select min(a) as min_a, max(a) as max_a from group_by_table), possible_values as (select n.id from numbers as n inner join min_max as mm on n.id >= mm.min_a and n.id <= mm.max_a), result as (select pv.id from possible_values as pv where exists (select top (1) 1 from group_by_table as g where g.a = pv.id)) select count(*) from result;",
+				//"b-numbers-table": "with min_max as (select min(b) as min_b, max(b) as max_b from group_by_table), possible_values as (select n.id from numbers as n inner join min_max as mm on n.id >= mm.min_b and n.id <= mm.max_b), result as (select pv.id from possible_values as pv where exists (select top (1) 1 from group_by_table as g where g.b = pv.id)) select count(*) from result;",
+				//"c-numbers-table": "with min_max as (select min(c) as min_c, max(c) as max_c from group_by_table), possible_values as (select n.id from numbers as n inner join min_max as mm on n.id >= mm.min_c and n.id <= mm.max_c), result as (select pv.id from possible_values as pv where exists (select top (1) 1 from group_by_table as g where g.c = pv.id)) select count(*) from result;",
 			},
 		},
 		QueryInt,
@@ -66,11 +66,11 @@ var Tests = map[string]testData{
 				"large table": "select min(min_c2) from (select c1, min(c2) as min_c2 from large_group_by_table group by c1) as t",
 			},
 			MsSql22: {
+				"default":               "select min(min_product_id) from (select order_id, min(product_id) as min_product_id from order_detail group by order_id) as t;",
+				"large table":           "select min(min_c2) from (select c1, min(c2) as min_c2 from large_group_by_table group by c1) as t",
 				"optimized":             "select min(t3.min_c2) from (select distinct(c1) as c1 from large_group_by_table) as t cross apply (select min(t2.c2) as min_c2 from large_group_by_table as t2 where t2.c1 = t.c1) as t3;",
 				"super-optimized":       "select min(t4.min_c2) from (select min(c1) as min_c1, max(c1) as max_c1 from large_group_by_table) as t cross apply (select n.id from numbers as n where n.id >= t.min_c1 and n.id <= t.max_c1) as t2 cross apply (select min(t3.c2) as min_c2 from large_group_by_table as t3 where t3.c1 = t2.id) as t4;",
 				"super-super-optimized": "select min(t3.min_c2) from (select 0 as c1 union all select 1 union all select 2 union all select 3 union all select 4 union all select 5 union all select 6 union all select 7 union all select 8 union all select 9) as t cross apply (select min(t2.c2) as min_c2 from large_group_by_table as t2 where t2.c1 = t.c1) as t3;",
-				"default":               "select min(min_product_id) from (select order_id, min(product_id) as min_product_id from order_detail group by order_id) as t;",
-				"large table":           "select min(min_c2) from (select c1, min(c2) as min_c2 from large_group_by_table group by c1) as t",
 			},
 		},
 		QueryInt,
@@ -182,14 +182,17 @@ var Tests = map[string]testData{
 				"extra pre-agg": "select min(order_id), sum(total_price) from (select o.id as order_id, sum(od_agg.price) as total_price from \"order\" as o inner join (select od.order_id, sum(od.price) as price from order_detail as od group by od.order_id) as od_agg on od_agg.order_id = o.id group by o.id) as tmp;",
 			},
 			MsSql22: {
-				"":                     "select min(order_id), sum(total_price) from (select o.id as order_id, sum(od.price) as total_price from [order] as o inner join order_detail as od on od.order_id = o.id group by o.id) as tmp;",
-				"extra pre-agg":        "select min(order_id), sum(total_price) from (select o.id as order_id, sum(od_agg.price) as total_price from [order] as o inner join (select od.order_id, sum(od.price) as price from order_detail as od group by od.order_id) as od_agg on od_agg.order_id = o.id group by o.id) as tmp;",
-				"loop join":            "select min(order_id), sum(total_price) from (select o.id as order_id, sum(od.price) as total_price from [order] as o inner loop join order_detail as od on od.order_id = o.id group by o.id) as tmp;",
-				"loop join (maxdop 1)": "select min(order_id), sum(total_price) from (select o.id as order_id, sum(od.price) as total_price from [order] as o inner loop join order_detail as od on od.order_id = o.id group by o.id) as tmp option (maxdop 1);",
+				"extra pre-agg":                 "select min(order_id), sum(total_price) from (select o.id as order_id, sum(od_agg.price) as total_price from [order] as o inner join (select od.order_id, sum(od.price) as price from order_detail as od group by od.order_id) as od_agg on od_agg.order_id = o.id group by o.id) as tmp;",
+				"":                              "select min(order_id), sum(total_price) from (select o.id as order_id, sum(od.price) as total_price from [order] as o inner join order_detail as od on od.order_id = o.id group by o.id) as tmp;",
+				"merge join":                    "select min(order_id), sum(total_price) from (select o.id as order_id, sum(od.price) as total_price from [order] as o inner merge join order_detail as od on od.order_id = o.id group by o.id) as tmp;",
+				"extra pre-agg with merge join": "select min(order_id), sum(total_price) from (select o.id as order_id, sum(od_agg.price) as total_price from [order] as o inner join (select od.order_id, sum(od.price) as price from order_detail as od group by od.order_id) as od_agg on od_agg.order_id = o.id group by o.id) as tmp;",
+
+				//"loop join":            "select min(order_id), sum(total_price) from (select o.id as order_id, sum(od.price) as total_price from [order] as o inner loop join order_detail as od on od.order_id = o.id group by o.id) as tmp;",
+				//"loop join (maxdop 1)": "select min(order_id), sum(total_price) from (select o.id as order_id, sum(od.price) as total_price from [order] as o inner loop join order_detail as od on od.order_id = o.id group by o.id) as tmp option (maxdop 1);",
 			},
 		},
 		QueryIntAndFloat64,
-		20,
+		10,
 	},
 	"05": {
 		"grouping with partial aggregation",
@@ -209,7 +212,7 @@ var Tests = map[string]testData{
 			},
 		},
 		QueryIntAndString,
-		0,
+		15,
 	},
 	"06": {
 		"combine select from 2 indexes",
@@ -227,10 +230,10 @@ var Tests = map[string]testData{
 				//"x":            "select count(*)\nfrom large_group_by_table as l\nwhere l.c2 in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21) and l.c3 = 1;",
 			},
 			MsSql22: {
-				"simple":             "select count(*) from large_group_by_table as l where l.c2 = 1 and l.c3 = 1;",
-				"complex":            "select count(*) from large_group_by_table as l where (l.c2 = 1 or l.c2 = 2 or l.c2 = 50) and l.c3 = 1;",
-				"complex-optimized ": "select count(*) from large_group_by_table as l inner loop join large_group_by_table as l2 on l2.id = l.id and (l2.c2 = 1 or l2.c2 = 2 or l2.c2 = 50) where l.c3 = 1;",
-				"more complex":       "select count(*) from large_group_by_table as l where (l.c2 = 1 or l.c2 = 2 or l.c2 > 50) and l.c3 = 1;",
+				"simple":            "select count(*) from large_group_by_table as l where l.c2 = 1 and l.c3 = 1;",
+				"complex":           "select count(*) from large_group_by_table as l where (l.c2 = 1 or l.c2 = 2 or l.c2 = 50) and l.c3 = 1;",
+				"complex-loop-join": "select count(*) from large_group_by_table as l inner loop join large_group_by_table as l2 on l2.id = l.id and (l2.c2 = 1 or l2.c2 = 2 or l2.c2 = 50) where l.c3 = 1;",
+				"more complex":      "select count(*) from large_group_by_table as l where (l.c2 = 1 or l.c2 = 2 or l.c2 > 50) and l.c3 = 1;",
 				//"x":            "select count(*)\nfrom large_group_by_table as l\nwhere l.c2 in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21) and l.c3 = 1;",
 				//"x2":           "select count(*)\nfrom large_group_by_table as l\nwhere l.c2 >= 0 and l.c2 < 22 and l.c3 = 1;",
 			},
@@ -238,7 +241,18 @@ var Tests = map[string]testData{
 		QueryInt,
 		300,
 	},
-
+	"07": {
+		"postgres index only scan behaviour",
+		map[string]map[string]string{
+			PostgreSql: {
+				"index only scan":                   "select min(ts), max(description) from (select ts, description from transactions where ts < '2020-01-01 01:00:00') as t;",
+				"index only scan with heap fetches": "select min(ts), max(description) from (select ts, description from transactions_modified where ts < '2020-01-01 01:00:00') as t;",
+				"index scan":                        "select min(ts), max(description) from (select ts, description from transactions_wo_covered_index where ts < '2020-01-01 01:00:00') as t;",
+			},
+		},
+		QueryTsAndString,
+		1000,
+	},
 	//"needs-refactoring-00-1": {
 	//	"filter about 90% of 10 million rows table",
 	//	map[string]map[string]string{
@@ -397,7 +411,7 @@ var Tests = map[string]testData{
 }
 
 func QueryInt(ctx context.Context, db *sql.DB, query string) {
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 120*time.Second)
 	defer cancel()
 
 	// execute query with context and handle no rows error
@@ -414,7 +428,7 @@ func QueryInt(ctx context.Context, db *sql.DB, query string) {
 }
 
 func QueryString(ctx context.Context, db *sql.DB, query string) {
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 120*time.Second)
 	defer cancel()
 
 	// execute query with context and handle no rows error
@@ -431,7 +445,7 @@ func QueryString(ctx context.Context, db *sql.DB, query string) {
 }
 
 func QueryIntAndString(ctx context.Context, db *sql.DB, query string) {
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 120*time.Second)
 	defer cancel()
 
 	var i int
@@ -447,8 +461,25 @@ func QueryIntAndString(ctx context.Context, db *sql.DB, query string) {
 	//log.Println("result = ", result)
 }
 
+func QueryTsAndString(ctx context.Context, db *sql.DB, query string) {
+	ctx, cancel := context.WithTimeout(ctx, 120*time.Second)
+	defer cancel()
+
+	var t time.Time
+	var s string
+	if err := db.QueryRowContext(ctx, query).Scan(&t, &s); err != nil {
+		if err == sql.ErrNoRows {
+			t = time.Now()
+			s = "N/A"
+		} else {
+			log.Fatalf("unable to execute query: %v", err)
+		}
+	}
+	//log.Println("result = ", result)
+}
+
 func QueryIntAndFloat64(ctx context.Context, db *sql.DB, query string) {
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 120*time.Second)
 	defer cancel()
 
 	var i int

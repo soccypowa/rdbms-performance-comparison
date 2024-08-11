@@ -6,9 +6,9 @@ RDBMS used in tests. All RDBMS are executed as Docker containers with default se
 
 | DB        | Version   |
 |-----------|-----------|
-|MySQL      | 8.0.33    |
-|PostgreSQL | 15.3      |
-|MSSQL      | 2022-CU4  |
+|MySQL      | 8.3.0     |
+|PostgreSQL | 16.2      |
+|MSSQL      | 2022-CU11 |
 |MSSQL      | 2019-CU20 |
 
 [//]: # (## Queries)
