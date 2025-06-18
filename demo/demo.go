@@ -85,21 +85,6 @@ func main() {
 		//{MsSql19, "sqlserver", "sqlserver://SA:myStrong(!)Password@localhost:1434?database=test_db"},
 	}
 
-	//var testCodes []string
-	//if *testName == "all" {
-	//	testCodes = make([]string, len(Tests))
-	//	i := 0
-	//	for k := range Tests {
-	//		testCodes[i] = k
-	//		i++
-	//	}
-	//} else {
-	//	testCodes = strings.Split(*testName, ",")
-	//	for i := range testCodes {
-	//		testCodes[i] = strings.TrimSpace(testCodes[i])
-	//	}
-	//}
-
 	result := make(map[string]map[string]string)
 	debug := false
 
