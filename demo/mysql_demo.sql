@@ -1,43 +1,4 @@
--- 01 - select distinct / count distinct
-explain analyze select count(distinct a) as cnt from group_by_table;
-explain analyze select count(distinct b) as cnt from group_by_table;
-explain analyze select count(distinct c) as cnt from group_by_table;
-
-explain analyze select count(*) as cnt from (select a from group_by_table group by a) as tmp;
-explain analyze select count(*) as cnt from (select b from group_by_table group by b) as tmp;
-explain analyze select count(*) as cnt from (select c from group_by_table group by c) as tmp;
-
-
--- 01 - skip scan more complex  example
-explain analyze select order_id, min(product_id) as min_product_id from order_detail group by order_id;
-explain analyze select c1, min(c2) as min_c2 from large_group_by_table group by c1;
-
-
--- 02 - index seek with complex condition
-explain analyze select count(*) from client where id >= 1 and id < 10000 and id < 2;
-explain analyze select count(*) from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;
-explain analyze select count(*) from order_detail where order_id >= 1 and order_id < 100000 and order_id < 2;
-explain analyze select count(*) from order_detail where order_id >= 1 and order_id < 2 and order_id < 100000;
-
--- https://dev.mysql.com/doc/refman/8.0/en/range-optimization.html
-
-# set @sql = 'select count(order_id), '''' from order_detail where order_id >= ? and order_id < ? and order_id < ?';
-# prepare stmt from @sql;
-# set @a = 1;
-# set @b = 10000;
-# set @c = 2;
-# execute stmt using @a, @b, @c;d
-# deallocate prepare stmt;
-
-/*
- https://dev.mysql.com/doc/internals/en/prepared-stored-statement-execution.html
-
- That basically says that the execution plan created for the prepared statement at compile time is not used. At
- execution time, once the variables are bound, it uses the values to create a new execution plan and uses that one.
- */
-
-
--- 03 - nonclustered index seek vs. scan
+-- 01 - nonclustered index seek vs. scan
 explain analyze select min(name) from client where country = 'UK'; -- 1
 explain analyze select min(name) from client where country = 'NL'; -- 9
 explain analyze select min(name) from client where country = 'FR'; -- 90
@@ -58,19 +19,77 @@ explain analyze select min(name) from client_large where country = 'US'; -- 400,
 explain analyze select min(name) from client_large where country >= 'US'; -- 733,333, table scan
 
 
--- 04 - join and aggregate 2 sorted tables
+-- 02 - primary key lookup
+select count(*) from client;
+select count(*) from client_large;
+
+explain analyze select id from client where id = 5000;
+explain analyze select id from client_large where id = 500000;
+
+explain analyze select name from client where id = 5000;
+explain analyze select name from client_large where id = 500000;
+
+
+-- 03 - clustered index range
+explain analyze select min(name) from client where id >= 3000 and id < 5000;
+explain analyze select min(name) from client_large where id >= 300000 and id < 500000;
+
+
+-- 04 - table scan
+-- 10%
+explain analyze select count(*) from filter_1m where status_id_tinyint = 0;
+explain analyze select count(*) from filter_1m where status_id_int = 0;
+explain analyze select count(*) from filter_1m where status_char = 'deleted';
+explain analyze select count(*) from filter_1m where status_varchar = 'deleted';
+explain analyze select count(*) from filter_1m where status_text = 'deleted';
+
+-- 90%
+explain analyze select count(*) from filter_1m where status_id_tinyint = 1;
+explain analyze select count(*) from filter_1m where status_id_int = 1;
+explain analyze select count(*) from filter_1m where status_char = 'active';
+explain analyze select count(*) from filter_1m where status_varchar = 'active';
+explain analyze select count(*) from filter_1m where status_text = 'active';
+
+
+-- 05 - select distinct / count distinct
+explain analyze select count(distinct a) as cnt from group_by_table;
+explain analyze select count(distinct b) as cnt from group_by_table;
+explain analyze select count(distinct c) as cnt from group_by_table;
+
+explain analyze select count(*) as cnt from (select a from group_by_table group by a) as tmp;
+explain analyze select count(*) as cnt from (select b from group_by_table group by b) as tmp;
+explain analyze select count(*) as cnt from (select c from group_by_table group by c) as tmp;
+
+
+-- 06 - skip scan 1
+explain analyze select c1, min(c2) as min_c2 from large_group_by_table group by c1;
+
+
+-- 07 - skip scan 2
+explain analyze select count(*) from skip_scan_example where b = 0;
+
+
+-- 08 - index seek with complex condition
+explain analyze select count(*) from client where id >= 1 and id < 10000 and id < 2;
+explain analyze select count(*) from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;
+explain analyze select count(*) from order_detail where order_id >= 1 and order_id < 100000 and order_id < 2;
+explain analyze select count(*) from order_detail where order_id >= 1 and order_id < 2 and order_id < 100000;
+
+-- https://dev.mysql.com/doc/refman/8.0/en/range-optimization.html
+
+
+-- 09 - join and aggregate 2 sorted tables
 explain analyze select o.id as order_id, sum(od.price) as total_price from `order` as o inner join order_detail as od on od.order_id = o.id group by o.id;
 
 -- pre-agg
 explain analyze select o.id as order_id, sum(od_agg.price) as total_price from `order` as o inner join (select od.order_id, sum(od.price) as price from order_detail as od group by od.order_id) as od_agg on od_agg.order_id = o.id group by o.id;
-explain analyze select /*+ SEMIJOIN(@subq1 FIRSTMATCH) */ o.id as order_id, sum(od_agg.price) as total_price from `order` as o inner join (select /*+ QB_NAME(subq1) */ od.order_id, sum(od.price) as price from order_detail as od group by od.order_id) as od_agg on od_agg.order_id = o.id group by o.id;
 
 -- force hash join
-explain analyze select o.id as order_id, sum(od.price) as total_price from `order` as o inner join order_detail as od ignore index (primary) on od.order_id = o.id group by o.id;
+# explain analyze select o.id as order_id, sum(od.price) as total_price from `order` as o inner join order_detail as od ignore index (primary) on od.order_id = o.id group by o.id;
 explain analyze select o.id as order_id, sum(od.price) as total_price from `order` as o ignore index (primary) inner join order_detail as od ignore index (primary) on od.order_id = o.id group by o.id;
 
 
--- 05 - grouping with partial aggregation
+-- 10 - grouping with partial aggregation
 explain analyze
     select p.name, count(*)
     from `order` as o
@@ -84,6 +103,32 @@ explain analyze
     inner join group_by_table as l on l.id = o.id
     inner join product as p on p.id = l.a
     group by p.name;
+
+
+
+
+
+
+# set @sql = 'select count(order_id), '''' from order_detail where order_id >= ? and order_id < ? and order_id < ?';
+# prepare stmt from @sql;
+# set @a = 1;
+# set @b = 10000;
+# set @c = 2;
+# execute stmt using @a, @b, @c;d
+# deallocate prepare stmt;
+
+/*
+ https://dev.mysql.com/doc/internals/en/prepared-stored-statement-execution.html
+
+ That basically says that the execution plan created for the prepared statement at compile time is not used. At
+ execution time, once the variables are bound, it uses the values to create a new execution plan and uses that one.
+ */
+
+
+
+
+
+
 
 -- 06 - combine select from 2 indexes
 explain analyze select count(*)

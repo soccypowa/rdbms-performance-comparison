@@ -18,9 +18,11 @@ require (
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
+	github.com/jedib0t/go-pretty/v6 v6.6.7 // indirect
 	github.com/klauspost/compress v1.11.13 // indirect
 	github.com/lib/pq v1.10.8 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
+	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/microsoft/go-mssqldb v0.21.0 // indirect
 	github.com/moby/patternmatcher v0.5.0 // indirect
 	github.com/moby/sys/sequential v0.5.0 // indirect
@@ -30,11 +32,13 @@ require (
 	github.com/opencontainers/image-spec v1.1.0-rc2 // indirect
 	github.com/opencontainers/runc v1.1.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/testcontainers/testcontainers-go v0.19.0 // indirect
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
 	golang.org/x/net v0.7.0 // indirect
-	golang.org/x/sys v0.6.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
 	google.golang.org/genproto v0.0.0-20220617124728-180714bec0ad // indirect
 	google.golang.org/grpc v1.47.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect

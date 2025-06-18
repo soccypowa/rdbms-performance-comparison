@@ -1,21 +1,74 @@
--- 01 - select distinct / count distinct
+-- 01 - nonclustered index seek vs. scan
+explain (analyse, buffers, timing, costs off) select min(name) from client where country = 'UK'; -- 1, index scan
+explain (analyse, buffers, timing, costs off) select min(name) from client where country = 'NL'; -- 9, bitmap index scan
+explain (analyse, buffers, timing, costs off) select min(name) from client where country = 'FR'; -- 90
+explain (analyse, buffers, timing, costs off) select min(name) from client where country = 'CY'; -- 900
+explain (analyse, buffers, timing, costs off) select min(name) from client where country = 'US'; -- 4000
+explain (analyse, buffers, timing, costs off) select min(name) from client where country >= 'US' and country < 'UT'; -- 4000
+explain (analyse, buffers, timing, costs off) select min(name) from client where country >= 'US'; -- 7333, seq scan
+
+explain (analyse, buffers, timing, costs off) select min(name) from client where country >= 'US' and country < 'UT'; -- 4000, bitmap index scan
+explain (analyse, buffers, timing, costs off) select min(name) from client where country in ('US', 'UK'); -- 7334, bitmap index scan
+explain (analyse, buffers, timing, costs off) select min(name) from client where country in ('US', 'XX'); -- 7333, seq scan
+explain (analyse, buffers, timing, costs off) select min(name) from client where country in ('UK', 'NL'); -- 10, bitmap index scan
+
+explain (analyse, buffers, timing, costs off) select min(name) from client_large where country = 'UK'; -- 100, index scan
+explain (analyse, buffers, timing, costs off) select min(name) from client_large where country = 'NL'; -- 900, bitmap index scan
+explain (analyse, buffers, timing, costs off) select min(name) from client_large where country = 'FR'; -- 9,000
+explain (analyse, buffers, timing, costs off) select min(name) from client_large where country = 'CY'; -- 90,000
+explain (analyse, buffers, timing, costs off) select min(name) from client_large where country = 'US'; -- 400,000, parallel seq scan
+explain (analyse, buffers, timing, costs off) select min(name) from client_large where country >= 'US'; -- 733,333
+
+
+-- 02 - primary key lookup
+select count(*) from client;
+select count(*) from client_large;
+
+explain (analyse, buffers, timing, costs off) select id from client where id = 5000;
+explain (analyse, buffers, timing, costs off) select id from client_large where id = 500000;
+
+explain (analyse, buffers, timing, costs off) select name from client where id = 5000;
+explain (analyse, buffers, timing, costs off) select name from client_large where id = 500000;
+
+
+-- 03 - clustered index range
+explain (analyse, buffers, timing, costs off) select min(name) from client where id >= 3000 and id < 5000;
+explain (analyse, buffers, timing, costs off) select min(name) from client_large where id >= 300000 and id < 500000;
+
+
+-- 04 - table scan
+-- 10%
+explain (analyse, buffers, timing, costs off) select count(*) from filter_1m where status_id_tinyint = 0;
+explain (analyse, buffers, timing, costs off) select count(*) from filter_1m where status_id_int = 0;
+explain (analyse, buffers, timing, costs off) select count(*) from filter_1m where status_char = 'deleted';
+explain (analyse, buffers, timing, costs off) select count(*) from filter_1m where status_varchar = 'deleted';
+explain (analyse, buffers, timing, costs off) select count(*) from filter_1m where status_text = 'deleted';
+-- 90%
+explain (analyse, buffers, timing, costs off) select count(*) from filter_1m where status_id_tinyint = 1;
+explain (analyse, buffers, timing, costs off) select count(*) from filter_1m where status_id_int = 1;
+explain (analyse, buffers, timing, costs off) select count(*) from filter_1m where status_char = 'active';
+explain (analyse, buffers, timing, costs off) select count(*) from filter_1m where status_varchar = 'active';
+explain (analyse, buffers, timing, costs off) select count(*) from filter_1m where status_text = 'active';
+
+
+-- 05 - select distinct / count distinct
 explain (analyse, buffers, timing, costs off) select count(distinct a) as cnt from group_by_table;
 explain (analyse, buffers, timing, costs off) select count(distinct b) as cnt from group_by_table;
 explain (analyse, buffers, timing, costs off) select count(distinct c) as cnt from group_by_table;
 
-SET enable_seqscan = false;
-explain analyze select distinct a from group_by_table;
-explain analyze select a from group_by_table group by a;
-SET enable_seqscan = true;
+-- SET enable_seqscan = false;
+-- explain analyze select distinct a from group_by_table;
+-- explain analyze select a from group_by_table group by a;
+-- SET enable_seqscan = true;
 
 explain (analyse, buffers, timing, costs off) select count(*) as cnt from (select a from group_by_table group by a) as tmp;
 explain (analyse, buffers, timing, costs off) select count(*) as cnt from (select b from group_by_table group by b) as tmp;
 explain (analyse, buffers, timing, costs off) select count(*) as cnt from (select c from group_by_table group by c) as tmp;
 
-show max_parallel_workers_per_gather;
-set max_parallel_workers_per_gather = 1;
-set max_parallel_workers_per_gather = 2;
-set max_parallel_workers_per_gather = 4;
+-- show max_parallel_workers_per_gather;
+-- set max_parallel_workers_per_gather = 1;
+-- set max_parallel_workers_per_gather = 2;
+-- set max_parallel_workers_per_gather = 4;
 
 with recursive t as (
     select min(a) as x from group_by_table
@@ -54,16 +107,78 @@ from (
 ) as tmp;
 
 
--- 01 - skip scan more complex  example
-explain (analyse, buffers, timing, costs off) select order_id, min(product_id) as min_product_id from order_detail group by order_id;
+-- 06 - skip scan 1
 explain (analyse, buffers, timing, costs off) select c1, min(c2) as min_c2 from large_group_by_table group by c1;
 
+explain (analyse, buffers, timing, costs off) select t.c1, t3.min_c2
+from (select distinct c1 from large_group_by_table) as t
+cross join lateral (select min(t2.c2) as min_c2 from large_group_by_table as t2 where t2.c1 = t.c1) as t3;
 
--- 02 - index seek with complex condition
+explain (analyse, buffers, timing, costs off)
+    select min (t3.min_c2)
+    from (select distinct c1 from large_group_by_table) as t
+    cross join lateral (select min(t2.c2) as min_c2 from large_group_by_table as t2 where t2.c1 = t.c1) as t3;
+
+explain (analyse, buffers, timing, costs off)
+with recursive t as (
+    select min(c1) as c1 from large_group_by_table
+    union all
+    select (select min(c1) from large_group_by_table where c1 > t.c1) from t where t.c1 is not null
+)
+select min(t3.min_c2)
+from t cross join lateral (select min(t2.c2) as min_c2 from large_group_by_table as t2 where t2.c1 = t.c1) as t3;
+
+
+-- 07 - skip scan 2
+explain (analyse, buffers, timing, costs off) select count(*)
+from skip_scan_example
+where b = 0;
+
+
+-- 08 - index seek with complex condition (index merge optimization)
 explain (analyse, buffers, timing, costs off) select count(*) from client where id >= 1 and id < 10000 and id < 2;
 explain (analyse, buffers, timing, costs off) select count(*) from order_detail where order_id >= 1 and order_id < 10000 and order_id < 2;
 explain (analyse, buffers, timing, costs off) select count(*) from order_detail where order_id >= 1 and order_id < 100000 and order_id < 2;
 explain (analyse, buffers, timing, costs off) select count(*) from order_detail where order_id >= 1 and order_id < 2 and order_id < 100000;
+
+
+-- 09 - join and aggregate 2 sorted tables
+explain (analyse, buffers, timing, costs off) select o.id as order_id, sum(od.price) as total_price from "order" as o inner join order_detail as od on od.order_id = o.id group by o.id;
+
+-- pre-agg
+explain (analyse, buffers, timing, costs off) select o.id as order_id, sum(od_agg.price) as total_price from "order" as o inner join (select od.order_id, sum(od.price) as price from order_detail as od group by od.order_id) as od_agg on od_agg.order_id = o.id group by o.id;
+
+
+-- 10 - grouping with partial aggregation
+explain (analyse, buffers, timing, costs off)
+    select p.name, count(*)
+    from "order" as o
+    inner join group_by_table as l on l.id = o.id
+    inner join product as p on p.id = l.c
+    group by p.name;
+
+explain (analyse, buffers, timing, costs off)
+    select p.name, count(*)
+    from "order" as o
+    inner join group_by_table as l on l.id = o.id
+    inner join product as p on p.id = l.a
+    group by p.name;
+
+-- optimized
+explain (analyse, buffers, timing, costs off)
+    select p.name, cnt
+    from (
+        select l.c, count(*) as cnt
+        from "order" as o
+        inner join group_by_table as l on l.id = o.id group by l.c
+    ) as t
+    inner join product as p on p.id = t.c;
+
+
+
+
+
+
 
 -- prepare stmt(int, int, int) as select count(order_id), '' from order_detail where order_id >= $1 and order_id < $2 and order_id < $3;
 -- explain analyze execute stmt(1, 10000, 2);
@@ -92,33 +207,8 @@ explain (analyse, buffers, timing, costs off) select count(*) from "order" as o 
 explain (analyse, buffers, timing, costs off) select count(*) from client as a inner join client as b on a.name < b.name;
 
 
--- 03 - nonclustered index seek vs. scan
-explain (analyse, buffers, timing, costs off) select min(name) from client where country = 'UK'; -- 1, index scan
-explain (analyse, buffers, timing, costs off) select min(name) from client where country = 'NL'; -- 9, bitmap index scan
-explain (analyse, buffers, timing, costs off) select min(name) from client where country = 'FR'; -- 90
-explain (analyse, buffers, timing, costs off) select min(name) from client where country = 'CY'; -- 900
-explain (analyse, buffers, timing, costs off) select min(name) from client where country = 'US'; -- 4000
-explain (analyse, buffers, timing, costs off) select min(name) from client where country >= 'US' and country < 'UT'; -- 4000
-explain (analyse, buffers, timing, costs off) select min(name) from client where country >= 'US'; -- 7333, seq scan
-
-explain (analyse, buffers, timing, costs off) select min(name) from client where country >= 'US' and country < 'UT'; -- 4000, bitmap index scan
-explain (analyse, buffers, timing, costs off) select min(name) from client where country in ('US', 'UK'); -- 7334, bitmap index scan
-explain (analyse, buffers, timing, costs off) select min(name) from client where country in ('US', 'XX'); -- 7333, seq scan
-explain (analyse, buffers, timing, costs off) select min(name) from client where country in ('UK', 'NL'); -- 10, bitmap index scan
-
-explain (analyse, buffers, timing, costs off) select min(name) from client_large where country = 'UK'; -- 100, index scan
-explain (analyse, buffers, timing, costs off) select min(name) from client_large where country = 'NL'; -- 900, bitmap index scan
-explain (analyse, buffers, timing, costs off) select min(name) from client_large where country = 'FR'; -- 9,000
-explain (analyse, buffers, timing, costs off) select min(name) from client_large where country = 'CY'; -- 90,000
-explain (analyse, buffers, timing, costs off) select min(name) from client_large where country = 'US'; -- 400,000, parallel seq scan
-explain (analyse, buffers, timing, costs off) select min(name) from client_large where country >= 'US'; -- 733,333
 
 
--- 04 - join and aggregate 2 sorted tables
-explain (analyse, buffers, timing, costs off) select o.id as order_id, sum(od.price) as total_price from "order" as o inner join order_detail as od on od.order_id = o.id group by o.id;
-
--- pre-agg
-explain (analyse, buffers, timing, costs off) select o.id as order_id, sum(od_agg.price) as total_price from "order" as o inner join (select od.order_id, sum(od.price) as price from order_detail as od group by od.order_id) as od_agg on od_agg.order_id = o.id group by o.id;
 
 /*
 set enable_hashjoin = off;
@@ -139,30 +229,7 @@ show max_parallel_workers_per_gather;
 */
 
 
--- 05 - grouping with partial aggregation
-explain (analyse, buffers, timing, costs off)
-    select p.name, count(*)
-    from "order" as o
-    inner join group_by_table as l on l.id = o.id
-    inner join product as p on p.id = l.c
-    group by p.name;
 
-explain (analyse, buffers, timing, costs off)
-    select p.name, count(*)
-    from "order" as o
-    inner join group_by_table as l on l.id = o.id
-    inner join product as p on p.id = l.a
-    group by p.name;
-
--- optimized
-explain (analyse, buffers, timing, costs off)
-    select p.name, cnt
-    from (
-        select l.c, count(*) as cnt
-        from "order" as o
-        inner join group_by_table as l on l.id = o.id group by l.c
-    ) as t
-    inner join product as p on p.id = t.c;
 
 
 -- 06 - combine select from 2 indexes

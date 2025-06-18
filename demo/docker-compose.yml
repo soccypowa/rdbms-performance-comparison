@@ -1,12 +1,49 @@
 services:
-#  mariadb:
-#    image: mariadb:10.9.6
-#    platform: linux/amd64
-#    environment:
-#      MARIADB_ROOT_PASSWORD: mariadb
+  mariadb11:
+    image: mariadb:11.8.2
+    platform: linux/amd64
+    ports:
+      - "3406:3306"
+    environment:
+      MARIADB_DATABASE: test_db
+      MARIADB_ROOT_PASSWORD: mariadb
+    volumes:
+      - "./mysql_init_01_numbers.sql:/docker-entrypoint-initdb.d/mysql_init_01_numbers.sql"
+      - "./mysql_init_02_client.sql:/docker-entrypoint-initdb.d/mysql_init_02_client.sql"
+      - "./mysql_init_03_order.sql:/docker-entrypoint-initdb.d/mysql_init_03_order.sql"
+      - "./mysql_init_04_product.sql:/docker-entrypoint-initdb.d/mysql_init_04_product.sql"
+      - "./mysql_init_05_order_detail.sql:/docker-entrypoint-initdb.d/mysql_init_05_order_detail.sql"
+      - "./mysql_init_06_filter_10m.sql:/docker-entrypoint-initdb.d/mysql_init_06_filter_10m.sql"
+      - "./mysql_init_07_filter_1m.sql:/docker-entrypoint-initdb.d/mysql_init_07_filter_1m.sql"
+      - "./mysql_init_08_large_group_by_table.sql:/docker-entrypoint-initdb.d/mysql_init_08_large_group_by_table.sql"
+      - "./mysql_init_09_group_by_table.sql:/docker-entrypoint-initdb.d/mysql_init_09_group_by_table.sql"
 
-  postgres:
-    image: postgres:16.2
+  postgres18:
+    image: postgres:18beta1
+    platform: linux/amd64
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_USER: 'postgres'
+      POSTGRES_PASSWORD: 'postgres'
+      POSTGRES_DB: 'test_db'
+    volumes:
+      - ./postgres_init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  postgres16:
+    image: postgres:16.9
+    platform: linux/amd64
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_USER: 'postgres'
+      POSTGRES_PASSWORD: 'postgres'
+      POSTGRES_DB: 'test_db'
+    volumes:
+      - ./postgres_init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  postgres17:
+    image: postgres:17.5
     platform: linux/amd64
     ports:
       - "5433:5432"
@@ -17,11 +54,30 @@ services:
     volumes:
       - ./postgres_init.sql:/docker-entrypoint-initdb.d/init.sql
 
-  mysql:
-    image: mysql:8.3.0
+  mysql9:
+    image: mysql:9.3.0
     platform: linux/amd64
     ports:
-      - "3306:3306"
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: mysql
+      MYSQL_DATABASE: test_db
+    volumes:
+      - "./mysql_init_01_numbers.sql:/docker-entrypoint-initdb.d/mysql_init_01_numbers.sql"
+      - "./mysql_init_02_client.sql:/docker-entrypoint-initdb.d/mysql_init_02_client.sql"
+      - "./mysql_init_03_order.sql:/docker-entrypoint-initdb.d/mysql_init_03_order.sql"
+      - "./mysql_init_04_product.sql:/docker-entrypoint-initdb.d/mysql_init_04_product.sql"
+      - "./mysql_init_05_order_detail.sql:/docker-entrypoint-initdb.d/mysql_init_05_order_detail.sql"
+      - "./mysql_init_06_filter_10m.sql:/docker-entrypoint-initdb.d/mysql_init_06_filter_10m.sql"
+      - "./mysql_init_07_filter_1m.sql:/docker-entrypoint-initdb.d/mysql_init_07_filter_1m.sql"
+      - "./mysql_init_08_large_group_by_table.sql:/docker-entrypoint-initdb.d/mysql_init_08_large_group_by_table.sql"
+      - "./mysql_init_09_group_by_table.sql:/docker-entrypoint-initdb.d/mysql_init_09_group_by_table.sql"
+
+  mysql8:
+    image: mysql:8.4.5
+    platform: linux/amd64
+    ports:
+      - "3308:3306"
     environment:
       MYSQL_ROOT_PASSWORD: mysql
       MYSQL_DATABASE: test_db
@@ -37,10 +93,21 @@ services:
       - "./mysql_init_09_group_by_table.sql:/docker-entrypoint-initdb.d/mysql_init_09_group_by_table.sql"
 
   mssql2022:
-    image: mcr.microsoft.com/mssql/server:2022-CU11-ubuntu-22.04
+    image: mcr.microsoft.com/mssql/server:2022-CU19-ubuntu-22.04
     platform: linux/amd64
     ports:
       - "1433:1433"
+    environment:
+      ACCEPT_EULA: Y
+      MSSQL_USER: SA
+      MSSQL_SA_PASSWORD: 'myStrong(!)Password'
+      MSSQL_PID: Developer
+
+  mssql2025:
+    image: mcr.microsoft.com/mssql/server:2025-CTP2.0-ubuntu-22.04
+    platform: linux/amd64
+    ports:
+      - "1434:1433"
     environment:
       ACCEPT_EULA: Y
       MSSQL_USER: SA

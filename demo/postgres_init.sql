@@ -286,3 +286,28 @@ create index idx_group_by_table_a on group_by_table(a);
 create index idx_group_by_table_b on group_by_table(b);
 
 create index idx_group_by_table_c on group_by_table(c);
+
+
+-- skip_scan_example
+drop table if exists skip_scan_example;
+
+create table skip_scan_example
+(
+    id int not null,
+    a int not null,
+    b int not null,
+    c int not null,
+
+    primary key (id)
+);
+
+insert into skip_scan_example(id, a, b, c)
+select
+    id,
+    floor(random() * 10) as a,
+    floor(random() * 1000) as b,
+    floor(random() * 100000) as c
+from generate_series(1, 1000000, 1) as numbers(id);
+
+-- drop index idx_skip_scan_example_b_c;
+create index idx_skip_scan_example_a_b on skip_scan_example(a, b);

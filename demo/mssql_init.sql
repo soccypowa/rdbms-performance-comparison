@@ -46,12 +46,12 @@ create table client (
 go
 
 create table client_large (
-                        id int not null,
-                        name varchar(100) not null,
-                        country char(2) not null,
-                        insert_dt datetime not null,
+    id int not null,
+    name varchar(100) not null,
+    country char(2) not null,
+    insert_dt datetime not null,
 
-                        primary key clustered (id)
+    primary key clustered (id)
 );
 go
 
@@ -402,3 +402,32 @@ create nonclustered index idx_group_by_table_a on group_by_table(a);
 create nonclustered index idx_group_by_table_b on group_by_table(b);
 
 create nonclustered index idx_group_by_table_c on group_by_table(c);
+
+-- skip_scan_example
+drop table if exists skip_scan_example;
+
+create table skip_scan_example
+(
+    id int not null,
+    a int not null,
+    b int not null,
+    c int not null,
+);
+
+with tmp as (
+    select
+        row_number() over (order by (select 1)) - 1 as id
+    from sys.all_columns as a
+    cross join sys.all_columns as b
+)
+insert into skip_scan_example(id, a, b, c)
+select
+    id,
+    floor(rand(checksum(newid())) * 10) as a,
+    floor(rand(checksum(newid())) * 1000) as b,
+    floor(rand(checksum(newid())) * 100000) as c
+from tmp
+where id < 1000000;
+
+--drop index idx_skip_scan_example_b_c on skip_scan_example;
+create nonclustered index idx_skip_scan_example_a_b on skip_scan_example(a, b);
