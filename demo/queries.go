@@ -13,7 +13,6 @@ const MySql9 = "mysql-9.3.0"
 const PostgreSql16 = "pg-16.9"
 const PostgreSql17 = "pg-17.5"
 const PostgreSql18 = "pg-18-beta1"
-const MsSql19 = "mssql-19"
 const MsSql22 = "mssql-22-CU19"
 const MsSql25 = "mssql-25-CTP2.0"
 
@@ -240,6 +239,28 @@ var Tests = map[string]testData{
 		10,
 	},
 
+	"dml": {
+		"postgres index only scan behaviour",
+		map[string]map[string]string{
+			MySql9: {
+				"index only scan":              "select min(ts), max(description) from (select ts, description from transactions where ts < '2020-01-01 01:00:00') as t;",
+				"index only scan after update": "select min(ts), max(description) from (select ts, description from transactions_modified where ts < '2020-01-01 01:00:00') as t;",
+				"index scan after update":      "select min(ts), max(description) from (select ts, description from transactions_wo_covered_index where ts < '2020-01-01 01:00:00') as t;",
+			},
+			PostgreSql17: {
+				"index only scan":              "select min(ts), max(description) from (select ts, description from transactions where ts < '2020-01-01 01:00:00') as t;",
+				"index only scan after update": "select min(ts), max(description) from (select ts, description from transactions_modified where ts < '2020-01-01 01:00:00') as t;",
+				"index scan after update":      "select min(ts), max(description) from (select ts, description from transactions_wo_covered_index where ts < '2020-01-01 01:00:00') as t;",
+			},
+			MsSql22: {
+				"index only scan":              "select min(ts), max(description) from (select ts, description from transactions where ts < '2020-01-01 01:00:00') as t;",
+				"index only scan after update": "select min(ts), max(description) from (select ts, description from transactions_modified where ts < '2020-01-01 01:00:00') as t;",
+				"index scan after update":      "select min(ts), max(description) from (select ts, description from transactions_wo_covered_index where ts < '2020-01-01 01:00:00') as t;",
+			}},
+		QueryTsAndString,
+		100,
+	},
+
 	// skip scan
 	"distinct-count": {
 		"select distinct / count distinct",
@@ -391,7 +412,6 @@ var Tests = map[string]testData{
 		QueryInt,
 		200,
 	},
-
 	"join-agg": {
 		"join and aggregate 2 sorted tables",
 		map[string]map[string]string{
@@ -423,7 +443,6 @@ var Tests = map[string]testData{
 		QueryIntAndFloat64,
 		5,
 	},
-
 	"join-partial-agg": {
 		"grouping with partial aggregation",
 		map[string]map[string]string{
@@ -499,74 +518,6 @@ var Tests = map[string]testData{
 		300,
 	},
 
-	"07": {
-		"postgres index only scan behaviour",
-		map[string]map[string]string{
-			PostgreSql17: {
-				"index only scan":                   "select min(ts), max(description) from (select ts, description from transactions where ts < '2020-01-01 01:00:00') as t;",
-				"index only scan with heap fetches": "select min(ts), max(description) from (select ts, description from transactions_modified where ts < '2020-01-01 01:00:00') as t;",
-				"index scan":                        "select min(ts), max(description) from (select ts, description from transactions_wo_covered_index where ts < '2020-01-01 01:00:00') as t;",
-			},
-		},
-		QueryTsAndString,
-		1000,
-	},
-
-	//"needs-refactoring-00-1": {
-	//	"filter about 90% of 10 million rows table",
-	//	map[string]map[string]string{
-	//		MySql8: {
-	//			//"tinyint": "select count(*) from filter_1m where status_id_tinyint = 1;",
-	//			"int":           "select count(*) from filter_1m where status_id_int = 1;",
-	//			"int w/o where": "select count(*) from filter_1m",
-	//			"char":          "select count(*) from filter_1m where status_char = 'active';",
-	//			"varchar":       "select count(*) from filter_1m where status_varchar = 'active';",
-	//			"text":          "select count(*) from filter_1m where status_text = 'active';",
-	//		},
-	//		PostgreSql17: {
-	//			//"tinyint": "select count(*) from filter_1m where status_id_tinyint = 1;",
-	//			"int":     "select count(*) from filter_1m where status_id_int = 1;",
-	//			"char":    "select count(*) from filter_1m where status_char = 'active';",
-	//			"varchar": "select count(*) from filter_1m where status_varchar = 'active';",
-	//			"text":    "select count(*) from filter_1m where status_text = 'active';",
-	//		},
-	//		//MsSql19: {
-	//		//	//"tinyint": "select count(*) from filter_1m where status_id_tinyint = 1;",
-	//		//	"int":     "select count(*) from filter_1m where status_id_int = 1;",
-	//		//	"char":    "select count(*) from filter_1m where status_char = 'active';",
-	//		//	"varchar": "select count(*) from filter_1m where status_varchar = 'active';",
-	//		//	"text":    "select count(*) from filter_1m where status_text = 'active';",
-	//		//},
-	//		MsSql22: {
-	//			//"tinyint": "select count(*) from filter_1m where status_id_tinyint = 1;",
-	//			"int":     "select count(*) from filter_1m where status_id_int = 1;",
-	//			"char":    "select count(*) from filter_1m where status_char = 'active';",
-	//			"varchar": "select count(*) from filter_1m where status_varchar = 'active';",
-	//			"text":    "select count(*) from filter_1m where status_text = 'active';",
-	//		},
-	//	},
-	//	QueryInt,
-	//	10,
-	//},
-	//"needs-refactoring-00-2": {
-	//	"filter 10 million rows table",
-	//	map[string]map[string]string{
-	//		MySql8: {
-	//			"10%": "select count(*) from filter_1m where status_id_int = 0;",
-	//			"90%": "select count(*) from filter_1m where status_id_int = 1;",
-	//		},
-	//		PostgreSql17: {
-	//			"10%": "select count(*) from filter_1m where status_id_int = 0;",
-	//			"90%": "select count(*) from filter_1m where status_id_int = 1;",
-	//		},
-	//		MsSql22: {
-	//			"10%": "select count(*) from filter_1m where status_id_int = 0;",
-	//			"90%": "select count(*) from filter_1m where status_id_int = 1;",
-	//		},
-	//	},
-	//	QueryInt,
-	//	10,
-	//},
 	//"needs-refactoring-00-3": {
 	//	"count rows in parallel",
 	//	map[string]map[string]string{

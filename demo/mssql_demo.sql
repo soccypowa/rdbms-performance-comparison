@@ -189,22 +189,7 @@ inner join product as p on p.id = l.a
 group by p.name;
 
 
-
-
-
--- declare @a int = 1, @b int = 10000, @c int = 2;
--- select count(*) from order_detail where order_id >= @a and order_id < @b and order_id < @c;
-
-
-
-
-
-
-
-
-
-
--- 06 - combine select from 2 indexes
+-- 11 - combine select from 2 indexes
 select count(*)
 from large_group_by_table as l
 where l.c2 = 1 and l.c3 = 1;
@@ -223,20 +208,121 @@ select count(*)
 from large_group_by_table as l
 where (l.c2 = 1 or l.c2 = 2 or l.c2 > 50) and l.c3 = 1;
 
+
+-- 12 - dml
+drop table if exists transactions;
+drop table if exists transactions_modified;
+drop table if exists transactions_wo_covered_index;
+
+create table transactions (
+    id int not null,
+    description varchar(100) not null,
+    ts datetime not null,
+
+    primary key (id)
+);
+
+create table transactions_modified (
+                              id int not null,
+                              description varchar(100) not null,
+                              ts datetime not null,
+
+                              primary key (id)
+);
+
+create table transactions_wo_covered_index (
+                                       id int not null,
+                                       description varchar(100) not null,
+                                       ts datetime not null,
+
+                                       primary key (id)
+);
+
+with tmp as (
+    select
+        row_number() over (order by (select 1)) - 1 as id
+    from sys.all_columns as a
+    cross join sys.all_columns as b
+)
+insert into transactions (id, description, ts)
+select
+    id,
+    concat('desc_', id, '_', replicate('x', 50)) as description,
+    dateadd(second, id, '2020-01-01 00:00:00') as ts
+from tmp
+where id < 1000000;
+
+create index ix_ts_description on transactions(ts) include (description);
+
+with tmp as (
+    select
+        row_number() over (order by (select 1)) - 1 as id
+    from sys.all_columns as a
+    cross join sys.all_columns as b
+)
+insert into transactions_modified (id, description, ts)
+select
+    id,
+    concat('desc_', id, '_', replicate('x', 50)) as description,
+    dateadd(second, id, '2020-01-01 00:00:00') as ts
+from tmp
+where id < 1000000;
+
+create index ix_transactions_modified__ts_description on transactions_modified(ts) include (description);
+
+with tmp as (
+    select
+        row_number() over (order by (select 1)) - 1 as id
+    from sys.all_columns as a
+    cross join sys.all_columns as b
+)
+insert into transactions_wo_covered_index (id, description, ts)
+select
+    id,
+    concat('desc_', id, '_', replicate('x', 50)) as description,
+    dateadd(second, id, '2020-01-01 00:00:00') as ts
+from tmp
+where id < 1000000;
+
+create index ix_transactions_wo_covered_index__ts on transactions_wo_covered_index(ts);
+
+update transactions_modified set description = description;
+update transactions_wo_covered_index set description = description;
+
+select ts, description from transactions where ts < '2020-01-01 01:00:00';
+select ts, description from transactions_modified where ts < '2020-01-01 01:00:00';
+select ts, description from transactions_wo_covered_index where ts < '2020-01-01 01:00:00';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- declare @a int = 1, @b int = 10000, @c int = 2;
+-- select count(*) from order_detail where order_id >= @a and order_id < @b and order_id < @c;
+
+
+
+
+
+
+
+
+
+
+
 -- explain analyze select count(*)
 -- from large_group_by_table as l
 -- where l.c2 in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21) and l.c3 = 1;
-
-
-
-
-
-
-
-
-
-
-
 
 select count(*) from order_detail as od where order_id = 1;
 

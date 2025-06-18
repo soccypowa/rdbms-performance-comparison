@@ -105,6 +105,120 @@ explain analyze
     group by p.name;
 
 
+-- 11 - combine select from 2 indexes
+explain analyze select count(*)
+from large_group_by_table as l
+where l.c2 = 1 and l.c3 = 1;
+
+explain analyze select count(*)
+from large_group_by_table as l
+where (l.c2 = 1 or l.c2 = 2 or l.c2 = 50) and l.c3 = 1;
+
+explain analyze select count(*)
+from large_group_by_table as l
+where (l.c2 = 1 or l.c2 = 2 or l.c2 > 50) and l.c3 = 1;
+
+
+-- 12 - dml
+drop table if exists transactions;
+drop table if exists transactions_modified;
+drop table if exists transactions_wo_covered_index;
+
+create table transactions (
+    id int not null,
+    description varchar(100) not null,
+    ts timestamp not null,
+
+    primary key (id)
+);
+
+create table transactions_modified (
+                              id int not null,
+                              description varchar(100) not null,
+                              ts timestamp not null,
+
+                              primary key (id)
+);
+
+create table transactions_wo_covered_index (
+                                       id int not null,
+                                       description varchar(100) not null,
+                                       ts timestamp not null,
+
+                                       primary key (id)
+);
+
+insert into transactions (id, description, ts)
+with tmp as (
+    select
+        a.id + b.id * 10000 as id
+    from numbers as a
+    cross join numbers as b
+)
+select
+    id,
+    concat('desc_', id, '_', repeat('x', 50)) as description,
+    date_add('2020-01-01 00:00:00', interval id second) as ts
+from tmp
+where id < 1000000;
+
+
+create index ix_ts_description on transactions(ts, description); -- no include
+
+insert into transactions_modified (id, description, ts)
+with tmp as (
+    select
+        a.id + b.id * 10000 as id
+    from numbers as a
+    cross join numbers as b
+)
+select
+    id,
+    concat('desc_', id, '_', repeat('x', 50)) as description,
+    date_add('2020-01-01 00:00:00', interval id second) as ts
+from tmp
+where id < 1000000;
+
+create index ix_transactions_modified__ts_description on transactions_modified(ts, description);
+
+insert into transactions_wo_covered_index (id, description, ts)
+with tmp as (
+    select
+        a.id + b.id * 10000 as id
+    from numbers as a
+    cross join numbers as b
+)
+select
+    id,
+    concat('desc_', id, '_', repeat('x', 50)) as description,
+    date_add('2020-01-01 00:00:00', interval id second) as ts
+from tmp
+where id < 1000000;
+
+create index ix_transactions_wo_covered_index__ts on transactions_wo_covered_index(ts);
+
+update transactions_modified set description = description;
+update transactions_wo_covered_index set description = description;
+
+explain analyze select ts, description from transactions where ts < '2020-01-01 01:00:00';
+explain analyze select ts, description from transactions_modified where ts < '2020-01-01 01:00:00';
+explain analyze select ts, description from transactions_wo_covered_index where ts < '2020-01-01 01:00:00';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -130,22 +244,10 @@ explain analyze
 
 
 
--- 06 - combine select from 2 indexes
-explain analyze select count(*)
-from large_group_by_table as l
-where l.c2 = 1 and l.c3 = 1;
 
-explain analyze select count(*)
-from large_group_by_table as l
-where (l.c2 = 1 or l.c2 = 2 or l.c2 = 50) and l.c3 = 1;
-
-explain analyze select count(*)
-from large_group_by_table as l
-where (l.c2 = 1 or l.c2 = 2 or l.c2 > 50) and l.c3 = 1;
-
--- explain analyze select count(*)
--- from large_group_by_table as l
--- where l.c2 in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21) and l.c3 = 1;
+# explain analyze select count(*)
+# from large_group_by_table as l
+# where l.c2 in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21) and l.c3 = 1;
 
 
 
@@ -154,22 +256,6 @@ where (l.c2 = 1 or l.c2 = 2 or l.c2 > 50) and l.c3 = 1;
 
 
 
-
--- 00 - table scan
-explain analyze select count(*) from filter_1m where status_id_tinyint = 0;
-explain analyze select count(*) from filter_1m where status_id_int = 0;
-explain analyze select count(*) from filter_1m where status_char = 'deleted';
-explain analyze select count(*) from filter_1m where status_varchar = 'deleted';
-explain analyze select count(*) from filter_1m where status_text = 'deleted';
-
-explain analyze select count(*) from filter_1m where status_id_tinyint = 1;
-explain analyze select count(*) from filter_1m where status_id_int = 1;
-explain analyze select count(*) from filter_1m where status_char = 'active';
-explain analyze select count(*) from filter_1m where status_varchar = 'active';
-explain analyze select count(*) from filter_1m where status_text = 'active';
-
-explain analyze select count(*) from filter_1m;
-explain analyze select count(*) from filter_1m_with_pk;
 
 # select @@innodb_parallel_read_threads;
 # set local innodb_parallel_read_threads=1;

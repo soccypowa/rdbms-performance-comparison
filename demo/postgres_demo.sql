@@ -175,6 +175,94 @@ explain (analyse, buffers, timing, costs off)
     inner join product as p on p.id = t.c;
 
 
+-- 11 - combine select from 2 indexes
+explain (analyse, buffers, timing, costs off) select count(*)
+from large_group_by_table as l
+where l.c2 = 1 and l.c3 = 1;
+
+explain (analyse, buffers, timing, costs off) select count(*)
+from large_group_by_table as l
+where (l.c2 = 1 or l.c2 = 2 or l.c2 = 50) and l.c3 = 1;
+
+explain (analyse, buffers, timing, costs off) select count(*)
+from large_group_by_table as l
+where (l.c2 = 1 or l.c2 = 2 or l.c2 > 50) and l.c3 = 1;
+
+
+-- 12 - dml
+drop table if exists transactions;
+drop table if exists transactions_modified;
+drop table if exists transactions_wo_covered_index;
+
+create table transactions (
+    id int not null,
+    description varchar(100) not null,
+    ts timestamp not null,
+
+    primary key (id)
+);
+
+create table transactions_modified (
+                              id int not null,
+                              description varchar(100) not null,
+                              ts timestamp not null,
+
+                              primary key (id)
+);
+
+create table transactions_wo_covered_index (
+                                       id int not null,
+                                       description varchar(100) not null,
+                                       ts timestamp not null,
+
+                                       primary key (id)
+);
+
+insert into transactions (id, description, ts)
+select
+    id,
+    concat('desc_', id, '_', repeat('x', 50)) as description,
+    timestamp '2020-01-01' + id * interval '1 second' as ts
+from generate_series(1, 1e6) as numbers(id);
+
+create index ix_ts_description on transactions(ts) include (description);
+
+insert into transactions_modified (id, description, ts)
+select
+    id,
+    concat('desc_', id, '_', repeat('x', 50)) as description,
+    timestamp '2020-01-01' + id * interval '1 second' as ts
+from generate_series(1, 1e6) as numbers(id);
+
+create index ix_transactions_modified__ts_description on transactions_modified(ts) include (description);
+
+insert into transactions_wo_covered_index (id, description, ts)
+select
+    id,
+    concat('desc_', id, '_', repeat('x', 50)) as description,
+    timestamp '2020-01-01' + id * interval '1 second' as ts
+from generate_series(1, 1e6) as numbers(id);
+
+create index ix_transactions_wo_covered_index__ts on transactions_wo_covered_index(ts);
+
+alter table transactions_modified set (autovacuum_enabled = false);
+alter table transactions_wo_covered_index set (autovacuum_enabled = false);
+
+update transactions_modified set description = description;
+update transactions_wo_covered_index set description = description;
+
+explain (analyse, buffers, costs off) select ts, description from transactions where ts < '2020-01-01 01:00:00';
+explain (analyse, buffers, costs off) select ts, description from transactions_modified where ts < '2020-01-01 01:00:00';
+explain (analyse, buffers, costs off) select ts, description from transactions_wo_covered_index where ts < '2020-01-01 01:00:00';
+
+
+
+
+
+
+
+
+
 
 
 
@@ -231,20 +319,6 @@ show max_parallel_workers_per_gather;
 
 
 
-
--- 06 - combine select from 2 indexes
-explain (analyse, buffers, timing, costs off) select count(*)
-from large_group_by_table as l
-where l.c2 = 1 and l.c3 = 1;
-
-explain (analyse, buffers, timing, costs off) select count(*)
-from large_group_by_table as l
-where (l.c2 = 1 or l.c2 = 2 or l.c2 = 50) and l.c3 = 1;
-
-explain (analyse, buffers, timing, costs off) select count(*)
-from large_group_by_table as l
-where (l.c2 = 1 or l.c2 = 2 or l.c2 > 50) and l.c3 = 1;
-
 -- explain analyze select count(*)
 -- from large_group_by_table as l
 -- where l.c2 in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21) and l.c3 = 1;
@@ -252,23 +326,6 @@ where (l.c2 = 1 or l.c2 = 2 or l.c2 > 50) and l.c3 = 1;
 
 
 
-
--- 00 - table scan
-explain analyze select count(*) from filter_1m where status_id_tinyint = 0;
-explain analyze select count(*) from filter_1m where status_id_int = 0;
-explain analyze select count(*) from filter_1m where status_char = 'deleted';
-explain analyze select count(*) from filter_1m where status_varchar = 'deleted';
-explain analyze select count(*) from filter_1m where status_text = 'deleted';
-
-explain analyze select count(*) from filter_1m where status_id_tinyint = 1;
-explain analyze select count(*) from filter_1m where status_id_int = 1;
-explain analyze select count(*) from filter_1m where status_char = 'active';
-explain analyze select count(*) from filter_1m where status_varchar = 'active';
-explain analyze select count(*) from filter_1m where status_text = 'active';
-
-explain analyze select count(*) from filter_1m;
-explain analyze select count(*) from filter_1m_with_pk;
-explain analyze select count(id) from filter_1m_with_pk;
 
 
 -- 01 - lookup by primary key
@@ -311,66 +368,6 @@ explain analyze select count(*)
 from large_group_by_table as l
 where (l.c2 = 1 or l.c2 = 2 or l.c2 > 50) and l.c3 = 1;
 
-drop table if exists transactions;
-drop table if exists transactions_modified;
-drop table if exists transactions_wo_covered_index;
-
-create table transactions (
-    id int not null,
-    description varchar(100) not null,
-    ts timestamp not null,
-
-    primary key (id)
-);
-
-create table transactions_modified (
-                              id int not null,
-                              description varchar(100) not null,
-                              ts timestamp not null,
-
-                              primary key (id)
-);
-
-create table transactions_wo_covered_index (
-                                       id int not null,
-                                       description varchar(100) not null,
-                                       ts timestamp not null,
-
-                                       primary key (id)
-);
-
-insert into transactions (id, description, ts)
-select
-    id,
-    concat('desc_', id, '_', repeat('x', 50)) as description,
-    timestamp '2020-01-01' + id * interval '1 second' as ts
-from generate_series(1, 1e6) as numbers(id);
-
-create index ix_ts_description on transactions(ts) include (description);
-
-insert into transactions_modified (id, description, ts)
-select
-    id,
-    concat('desc_', id, '_', repeat('x', 50)) as description,
-    timestamp '2020-01-01' + id * interval '1 second' as ts
-from generate_series(1, 1e6) as numbers(id);
-
-create index ix_transactions_modified__ts_description on transactions_modified(ts) include (description);
-
-insert into transactions_wo_covered_index (id, description, ts)
-select
-    id,
-    concat('desc_', id, '_', repeat('x', 50)) as description,
-    timestamp '2020-01-01' + id * interval '1 second' as ts
-from generate_series(1, 1e6) as numbers(id);
-
-create index ix_transactions_wo_covered_index__ts on transactions_wo_covered_index(ts);
-
-update transactions_modified set description = description;
-
-explain (analyse, buffers, costs off) select ts, description from transactions where ts < '2020-01-01 01:00:00';
-explain (analyse, buffers, costs off) select ts, description from transactions_modified where ts < '2020-01-01 01:00:00';
-explain (analyse, buffers, costs off) select ts, description from transactions_wo_covered_index where ts < '2020-01-01 01:00:00';
 
 -- set enable_indexonlyscan=false;
 -- explain (analyse, buffers, costs off) select ts, description from transactions_modified where ts < '2020-01-01 00:01:00';
@@ -379,3 +376,4 @@ explain (analyse, buffers, costs off) select ts, description from transactions_w
 vacuum transactions;
 
 ALTER TABLE transactions_modified SET (autovacuum_enabled = false);
+ALTER TABLE transactions_modified SET (autovacuum_enabled = true);

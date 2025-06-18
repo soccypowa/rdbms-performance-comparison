@@ -74,8 +74,8 @@ func main() {
 		dsn            string
 	}{
 		{MariaDb, "mysql", "root:mariadb@tcp(127.0.0.1:3406)/test_db"},
-		{MySql8, "mysql", "root:mysql@tcp(127.0.0.1:3308)/test_db"},
-		{MySql9, "mysql", "root:mysql@tcp(127.0.0.1:3307)/test_db"},
+		{MySql8, "mysql", "root:mysql@tcp(127.0.0.1:3308)/test_db?parseTime=true"},
+		{MySql9, "mysql", "root:mysql@tcp(127.0.0.1:3307)/test_db?parseTime=true"},
 		{PostgreSql16, "postgres", "postgres://postgres:postgres@localhost:5434/test_db?sslmode=disable"},
 		{PostgreSql17, "postgres", "postgres://postgres:postgres@localhost:5433/test_db?sslmode=disable"},
 		{PostgreSql18, "postgres", "postgres://postgres:postgres@localhost:5435/test_db?sslmode=disable"},
