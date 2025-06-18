@@ -7,10 +7,10 @@ explain (analyse, buffers, timing, costs off) select min(name) from client where
 explain (analyse, buffers, timing, costs off) select min(name) from client where country >= 'US' and country < 'UT'; -- 4000
 explain (analyse, buffers, timing, costs off) select min(name) from client where country >= 'US'; -- 7333, seq scan
 
-explain (analyse, buffers, timing, costs off) select min(name) from client where country >= 'US' and country < 'UT'; -- 4000, bitmap index scan
-explain (analyse, buffers, timing, costs off) select min(name) from client where country in ('US', 'UK'); -- 7334, bitmap index scan
-explain (analyse, buffers, timing, costs off) select min(name) from client where country in ('US', 'XX'); -- 7333, seq scan
-explain (analyse, buffers, timing, costs off) select min(name) from client where country in ('UK', 'NL'); -- 10, bitmap index scan
+-- explain (analyse, buffers, timing, costs off) select min(name) from client where country >= 'US' and country < 'UT'; -- 4000, bitmap index scan
+-- explain (analyse, buffers, timing, costs off) select min(name) from client where country in ('US', 'UK'); -- 7334, bitmap index scan
+-- explain (analyse, buffers, timing, costs off) select min(name) from client where country in ('US', 'XX'); -- 7333, seq scan
+-- explain (analyse, buffers, timing, costs off) select min(name) from client where country in ('UK', 'NL'); -- 10, bitmap index scan
 
 explain (analyse, buffers, timing, costs off) select min(name) from client_large where country = 'UK'; -- 100, index scan
 explain (analyse, buffers, timing, costs off) select min(name) from client_large where country = 'NL'; -- 900, bitmap index scan

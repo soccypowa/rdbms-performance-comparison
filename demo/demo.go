@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -192,7 +193,8 @@ func main() {
 
 	for _, r := range rows {
 		row := make([]interface{}, len(columnNames)+1)
-		row[0] = r
+		prettyName := regexp.MustCompile(`^[a-z]\s+-\s+`).ReplaceAllString(r, "")
+		row[0] = prettyName
 		for i, v := range columnNames {
 			v, _ := result[v][r]
 			row[i+1] = v
