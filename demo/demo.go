@@ -82,7 +82,7 @@ func main() {
 		{PostgreSql18, "postgres", "postgres://postgres:postgres@localhost:5435/test_db?sslmode=disable"},
 		{MsSql22, "sqlserver", "sqlserver://SA:myStrong(!)Password@localhost:1433?database=test_db"},
 		{MsSql25, "sqlserver", "sqlserver://SA:myStrong(!)Password@localhost:1434?database=test_db"},
-		//{MsSql19, "sqlserver", "sqlserver://SA:myStrong(!)Password@localhost:1434?database=test_db"},
+		{MsSql19, "sqlserver", "sqlserver://SA:myStrong(!)Password@localhost:1432?database=test_db"},
 	}
 
 	result := make(map[string]map[string]string)
