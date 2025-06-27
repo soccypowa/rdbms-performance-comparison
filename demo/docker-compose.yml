@@ -122,18 +122,17 @@ services:
      - "./mssql_init.sh:/mssql_init.sh"
     command: ["/bin/bash", "/mssql_init.sh"]
 
-  # mssql2019:
-  #  image: docker pull mcr.microsoft.com/mssql/server:2019-CU32-ubuntu-20.04
-  #  platform: linux/amd64
-  #  ports:
-  #    - "1434:1433"
-  #  environment:
-  #    ACCEPT_EULA: Y
-  #    MSSQL_USER: SA
-  #    MSSQL_SA_PASSWORD: 'myStrong(!)Password'
-  #    MSSQL_PID: Developer
-  #  volumes:
-  #    - "./mssql_init.sql:/mssql_init.sql"
-  #    - "./mssql_init.sh:/mssql_init.sh"
-  #  command:
-  #    - /mssql_init.sh
+  mssql2019:
+    image: mcr.microsoft.com/mssql/server:2019-CU32-ubuntu-20.04
+    platform: linux/amd64
+    ports:
+     - "1432:1433"
+    environment:
+     ACCEPT_EULA: Y
+     MSSQL_USER: SA
+     MSSQL_SA_PASSWORD: 'myStrong(!)Password'
+     MSSQL_PID: Developer
+    volumes:
+    - "./mssql_init.sql:/mssql_init.sql"
+    - "./mssql_init.sh:/mssql_init.sh"
+    command: ["/bin/bash", "/mssql_init.sh"]
