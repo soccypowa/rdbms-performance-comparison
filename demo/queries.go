@@ -13,6 +13,7 @@ const MySql9 = "mysql-9.3.0"
 const PostgreSql16 = "pg-16.9"
 const PostgreSql17 = "pg-17.5"
 const PostgreSql18 = "pg-18-beta1"
+const MsSql19 = "mssql-19-CU32"
 const MsSql22 = "mssql-22-CU19"
 const MsSql25 = "mssql-25-CTP2.0"
 
